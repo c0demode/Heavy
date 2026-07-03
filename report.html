@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Iron Log — Reports</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #16171a;
+    --panel: #1f2124;
+    --line: #34373c;
+    --chalk: #ede9e1;
+    --chalk-dim: #8c8f94;
+    --iron-red: #c23b22;
+    --plate-blue: #5b6470;
+    --ok-green: #5e8c61;
+  }
+  body.girl-mode {
+    --bg: #fff6fa;
+    --panel: #ffffff;
+    --line: #f6cee4;
+    --chalk: #4a2b41;
+    --chalk-dim: #b784a6;
+    --iron-red: #ec4899;
+    --plate-blue: #f9a8d4;
+    --ok-green: #4caf7d;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--chalk);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  h1, h2, .display {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  header {
+    padding: 22px 18px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--chalk); }
+  .back-link {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--chalk-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px;
+    text-decoration: none;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .back-link:hover { color: var(--chalk); border-color: var(--chalk-dim); }
+
+  main { padding: 18px; max-width: 480px; margin: 0 auto; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .panel-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 14px;
+    color: var(--chalk);
+  }
+
+  .field-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .field { flex: 1; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--chalk-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  input[type=number], input[type=datetime-local], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--chalk);
+    padding: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--iron-red); }
+
+  .log-btn {
+    width: 100%;
+    background: var(--iron-red);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .log-btn:active { filter: brightness(0.82); }
+
+  .chart-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .chart-block:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .chart-title { font-family: 'Oswald', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--chalk-dim); }
+  .chart-stat { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); }
+  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: var(--bg); }
+  .chart-substat { font-size: 10px; color: var(--chalk-dim); margin-top: 6px; text-align: right; }
+
+  .ledger-day { margin-bottom: 4px; }
+  .day-label {
+    font-size: 11px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 14px 0 6px; border-bottom: 1px solid var(--line);
+  }
+  .entry { display: flex; justify-content: space-between; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .entry .name { font-family: 'Oswald', sans-serif; font-size: 14px; letter-spacing: 0.03em; }
+  .entry .load { font-size: 15px; color: var(--chalk); }
+  .entry .time { font-size: 10px; color: var(--chalk-dim); margin-left: 8px; }
+  .entry .del { background: none; border: none; color: var(--chalk-dim); font-size: 14px; cursor: pointer; padding: 0 0 0 12px; }
+  .entry .del:hover { color: var(--iron-red); }
+
+  .empty { text-align: center; color: var(--chalk-dim); font-size: 12px; padding: 20px 0; }
+
+  .lift-select-row { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Reports</h1>
+  <a class="back-link" href="index.html">← Iron Log</a>
+</header>
+
+<main>
+  <div class="panel" id="bodyLogPanel">
+    <h2 class="panel-title">Log Body Stats</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodyWeight">Weight (lb)</label>
+        <input type="number" id="bodyWeight" inputmode="decimal" placeholder="185.0" step="0.1">
+      </div>
+      <div class="field">
+        <label for="bodyWaist">Waist (in)</label>
+        <input type="number" id="bodyWaist" inputmode="decimal" placeholder="34.0" step="0.1">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodyWhen">Date</label>
+        <input type="datetime-local" id="bodyWhen">
+      </div>
+    </div>
+    <button class="log-btn" id="bodyLogBtn">Log Body Stats</button>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Weight &amp; Measurements</h2>
+    <div class="chart-block" style="border-top:none; padding-top:0; margin-top:0;">
+      <div class="chart-header">
+        <span class="chart-title">Weight Trend (smoothed)</span>
+        <span class="chart-stat" id="weightStat">—</span>
+      </div>
+      <canvas id="weightChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="weightSubstat">No data yet</div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="chart-title">Waist Trend (smoothed)</span>
+        <span class="chart-stat" id="waistStat">—</span>
+      </div>
+      <canvas id="waistChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="waistSubstat">No data yet</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Body Log History</h2>
+    <div id="bodyLedger"></div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Lift Progress</h2>
+    <div class="lift-select-row">
+      <select id="liftSelect"></select>
+    </div>
+    <div class="chart-header">
+      <span class="chart-title">Estimated 1RM Trend</span>
+      <span class="chart-stat" id="liftStat">—</span>
+    </div>
+    <canvas id="liftChart" class="chart-canvas"></canvas>
+    <div class="chart-substat" id="liftSubstat">No data yet</div>
+  </div>
+</main>
+
+<script>
+// --- Apply whatever theme is active on the main app, so this page matches ---
+(function applySavedTheme() {
+  try {
+    const mode = localStorage.getItem('theme_mode') || (localStorage.getItem('girl_mode') === '1' ? 'girl' : 'default');
+    if (mode === 'girl') {
+      document.body.classList.add('girl-mode');
+    } else if (mode === 'custom') {
+      const saved = JSON.parse(localStorage.getItem('theme_custom_vars') || 'null');
+      if (saved) {
+        const map = { bg:'--bg', panel:'--panel', line:'--line', chalk:'--chalk', chalkDim:'--chalk-dim', accent:'--iron-red', accent2:'--plate-blue', ok:'--ok-green' };
+        Object.keys(map).forEach(k => { if (saved[k]) document.body.style.setProperty(map[k], saved[k]); });
+      }
+    }
+  } catch (e) {}
+})();
+
+function nowLocalISO() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+function fmtDay(dateStr) {
+  return new Date(dateStr).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function fmtTime(dateStr) {
+  return new Date(dateStr).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+function themeColor(varName, fallback) {
+  const v = getComputedStyle(document.body).getPropertyValue(varName).trim();
+  return v || fallback;
+}
+
+// ============ BODY LOG (weight / waist, Hacker's Diet smoothing) ============
+const BODY_SMOOTHING_N = 10; // classic Hacker's Diet damping factor (~10-day exponential average)
+let bodyEntries = [];
+
+function bodySaveLocal() {
+  try { localStorage.setItem('ironlog_body_entries', JSON.stringify(bodyEntries)); } catch (e) { console.error('body save failed', e); }
+}
+function bodyLoadLocal() {
+  try {
+    const raw = localStorage.getItem('ironlog_body_entries');
+    if (raw) bodyEntries = JSON.parse(raw);
+  } catch (e) { bodyEntries = []; }
+}
+
+// Hacker's Diet exponential smoothing: smoothed[i] = smoothed[i-1] + (raw[i] - smoothed[i-1]) / N
+// Seeds with the first raw value, then damps day-to-day noise (water weight, etc.) toward the true trend.
+function computeSmoothedSeries(rawEntries, key) {
+  const points = rawEntries
+    .filter(e => typeof e[key] === 'number')
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  let smoothed = null;
+  return points.map(p => {
+    smoothed = (smoothed === null) ? p[key] : smoothed + (p[key] - smoothed) / BODY_SMOOTHING_N;
+    return { timestamp: p.timestamp, raw: p[key], smoothed };
+  });
+}
+
+function findClosestAtOrBefore(points, cutoffMs) {
+  let candidate = null;
+  for (const p of points) {
+    if (new Date(p.timestamp).getTime() <= cutoffMs) candidate = p; else break;
+  }
+  return candidate;
+}
+
+function renderTrendChart(canvas, series, color) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth || 300;
+  const cssHeight = canvas.clientHeight || 130;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+  if (!series.length) {
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', cssWidth / 2, cssHeight / 2);
+    return;
+  }
+
+  const rawVals = series.map(p => p.raw);
+  const smoothVals = series.map(p => p.smoothed);
+  let min = Math.min(...rawVals, ...smoothVals);
+  let max = Math.max(...rawVals, ...smoothVals);
+  if (min === max) { min -= 1; max += 1; }
+  const pad = (max - min) * 0.15;
+  min -= pad; max += pad;
+
+  const marginX = 6, marginY = 10;
+  const plotW = cssWidth - marginX * 2;
+  const plotH = cssHeight - marginY * 2;
+  const xFor = i => marginX + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
+  const yFor = v => marginY + plotH - ((v - min) / (max - min)) * plotH;
+
+  // raw points (faint)
+  ctx.fillStyle = 'rgba(140,140,140,0.45)';
+  series.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(xFor(i), yFor(p.raw), 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // smoothed trend line (bold)
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  series.forEach((p, i) => {
+    const x = xFor(i), y = yFor(p.smoothed);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function renderBodyStat(statElId, subElId, points, unit) {
+  const statEl = document.getElementById(statElId);
+  const subEl = document.getElementById(subElId);
+  if (!points.length) { statEl.textContent = '—'; subEl.textContent = 'No data yet'; return; }
+  const latest = points[points.length - 1];
+  statEl.textContent = `${latest.smoothed.toFixed(1)} ${unit}`;
+  const cutoff = new Date(latest.timestamp).getTime() - 7 * 24 * 60 * 60 * 1000;
+  const past = findClosestAtOrBefore(points, cutoff);
+  if (past) {
+    const delta = latest.smoothed - past.smoothed;
+    const sign = delta > 0 ? '+' : '';
+    subEl.textContent = `7-day: ${sign}${delta.toFixed(1)} ${unit} · ~${sign}${delta.toFixed(1)} ${unit}/wk`;
+  } else {
+    subEl.textContent = `${points.length} entr${points.length === 1 ? 'y' : 'ies'} logged so far`;
+  }
+}
+
+function renderBodyCharts() {
+  const weightPoints = computeSmoothedSeries(bodyEntries, 'weight');
+  const waistPoints = computeSmoothedSeries(bodyEntries, 'waist');
+  const accent = themeColor('--iron-red', '#c23b22');
+  const accent2 = themeColor('--plate-blue', '#5b6470');
+  renderTrendChart(document.getElementById('weightChart'), weightPoints, accent);
+  renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2);
+  renderBodyStat('weightStat', 'weightSubstat', weightPoints, 'lb');
+  renderBodyStat('waistStat', 'waistSubstat', waistPoints, 'in');
+}
+
+function renderBodyLedger() {
+  const container = document.getElementById('bodyLedger');
+  if (!bodyEntries.length) {
+    container.innerHTML = '<div class="empty">No body stats logged yet.</div>';
+    return;
+  }
+  const sorted = [...bodyEntries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const groups = {};
+  sorted.forEach(e => {
+    const key = fmtDay(e.timestamp);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+  container.innerHTML = '';
+  Object.keys(groups).forEach(day => {
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'ledger-day';
+    const label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = day;
+    dayDiv.appendChild(label);
+    groups[day].forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'entry';
+      const parts = [];
+      if (typeof e.weight === 'number') parts.push(`${e.weight} lb`);
+      if (typeof e.waist === 'number') parts.push(`${e.waist} in`);
+      row.innerHTML = `
+        <span class="name">Body</span>
+        <span class="load">${parts.join(' · ')}<span class="time">${fmtTime(e.timestamp)}</span></span>
+        <button class="del" data-id="${e.id}">✕</button>
+      `;
+      dayDiv.appendChild(row);
+    });
+    container.appendChild(dayDiv);
+  });
+  container.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bodyEntries = bodyEntries.filter(e => e.id !== btn.dataset.id);
+      renderBodyLedger();
+      renderBodyCharts();
+      bodySaveLocal();
+    });
+  });
+}
+
+document.getElementById('bodyWhen').value = nowLocalISO();
+document.getElementById('bodyLogBtn').addEventListener('click', () => {
+  const weightVal = parseFloat(document.getElementById('bodyWeight').value);
+  const waistVal = parseFloat(document.getElementById('bodyWaist').value);
+  const when = document.getElementById('bodyWhen').value;
+  if ((!weightVal && !waistVal) || !when) {
+    alert('Enter a weight and/or waist measurement, plus a date/time.');
+    return;
+  }
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), timestamp: new Date(when).toISOString() };
+  if (weightVal) entry.weight = weightVal;
+  if (waistVal) entry.waist = waistVal;
+  bodyEntries.push(entry);
+  bodySaveLocal();
+  renderBodyLedger();
+  renderBodyCharts();
+  document.getElementById('bodyWeight').value = '';
+  document.getElementById('bodyWaist').value = '';
+  document.getElementById('bodyWhen').value = nowLocalISO();
+});
+
+// ============ LIFT PROGRESS (reads the same lift log data as index.html) ============
+let liftEntries = [];
+function loadLiftEntries() {
+  try {
+    const raw = localStorage.getItem('ironlog_entries');
+    if (raw) liftEntries = JSON.parse(raw);
+  } catch (e) { liftEntries = []; }
+}
+
+function epley1RM(weight, reps) {
+  return weight * (1 + reps / 30);
+}
+
+function getWeightedLiftNames() {
+  const names = new Set();
+  liftEntries.forEach(e => {
+    if (typeof e.weight === 'number' && e.weight > 0 && typeof e.reps === 'number') names.add(e.lift);
+  });
+  return Array.from(names).sort();
+}
+
+// Best estimated 1RM per calendar day for a given lift, chronological
+function computeLiftProgress(liftName) {
+  const dayBest = {};
+  liftEntries
+    .filter(e => e.lift === liftName && typeof e.weight === 'number' && e.weight > 0 && typeof e.reps === 'number')
+    .forEach(e => {
+      const dayKey = new Date(e.timestamp).toDateString();
+      const e1rm = epley1RM(e.weight, e.reps);
+      if (!dayBest[dayKey] || e1rm > dayBest[dayKey].e1rm) {
+        dayBest[dayKey] = { timestamp: e.timestamp, e1rm, weight: e.weight, reps: e.reps };
+      }
+    });
+  return Object.values(dayBest).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+}
+
+function renderLiftChart(liftName) {
+  const progress = computeLiftProgress(liftName);
+  const series = progress.map(p => ({ timestamp: p.timestamp, raw: p.e1rm, smoothed: p.e1rm }));
+  const accent = themeColor('--iron-red', '#c23b22');
+  renderTrendChart(document.getElementById('liftChart'), series, accent);
+
+  const statEl = document.getElementById('liftStat');
+  const subEl = document.getElementById('liftSubstat');
+  if (!progress.length) {
+    statEl.textContent = '—';
+    subEl.textContent = 'No history for this lift yet';
+    return;
+  }
+  const latest = progress[progress.length - 1];
+  statEl.textContent = `~${Math.round(latest.e1rm)} lb`;
+  const first = progress[0];
+  const totalChange = latest.e1rm - first.e1rm;
+  const sign = totalChange >= 0 ? '+' : '';
+  subEl.textContent = `Top set: ${latest.weight}×${latest.reps} · ${sign}${Math.round(totalChange)} lb since first logged session`;
+}
+
+function populateLiftSelect() {
+  const select = document.getElementById('liftSelect');
+  const names = getWeightedLiftNames();
+  select.innerHTML = '';
+  if (!names.length) {
+    const opt = document.createElement('option');
+    opt.textContent = 'No lifts logged yet';
+    select.appendChild(opt);
+    document.getElementById('liftStat').textContent = '—';
+    document.getElementById('liftSubstat').textContent = 'Log some sets in Iron Log first';
+    renderTrendChart(document.getElementById('liftChart'), [], themeColor('--iron-red', '#c23b22'));
+    return;
+  }
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+  select.value = names[0];
+  renderLiftChart(names[0]);
+}
+document.getElementById('liftSelect').addEventListener('change', (e) => renderLiftChart(e.target.value));
+
+// ============ Init ============
+bodyLoadLocal();
+renderBodyLedger();
+renderBodyCharts();
+loadLiftEntries();
+populateLiftSelect();
+
+// Re-render charts on resize (canvas needs re-scaling for DPR when layout changes)
+window.addEventListener('resize', () => {
+  renderBodyCharts();
+  const select = document.getElementById('liftSelect');
+  if (select.value) renderLiftChart(select.value);
+});
+</script>
+</body>
+</html>
