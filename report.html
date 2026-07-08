@@ -54,19 +54,20 @@
   }
   header h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--chalk); }
   .back-link {
-    background: none;
-    border: 1px solid var(--line);
-    color: var(--chalk-dim);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    background: var(--iron-red);
+    border: none;
+    color: #fff;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 8px 12px;
+    padding: 10px 16px;
     text-decoration: none;
     display: inline-block;
     flex-shrink: 0;
   }
-  .back-link:hover { color: var(--chalk); border-color: var(--chalk-dim); }
+  .back-link:active { filter: brightness(0.82); }
 
   main { padding: 18px; max-width: 480px; margin: 0 auto; }
 
@@ -207,7 +208,7 @@
       <select id="liftSelect"></select>
     </div>
     <div class="chart-header">
-      <span class="chart-title">Estimated 1RM Trend</span>
+      <span class="chart-title" id="liftChartTitle">Estimated 1RM Trend</span>
       <span class="chart-stat" id="liftStat">—</span>
     </div>
     <canvas id="liftChart" class="chart-canvas"></canvas>
@@ -442,53 +443,94 @@ function epley1RM(weight, reps) {
   return weight * (1 + reps / 30);
 }
 
-function getWeightedLiftNames() {
+// Mirror Iron Log's exercise catalog so dropdown grouping and types match the main screen
+const KNOWN_LIFTS = {
+  'Squat': { type: 'weighted', group: 'Program' },
+  'Bench Press': { type: 'weighted', group: 'Program' },
+  'Deadlift': { type: 'weighted', group: 'Program' },
+  'Overhead Press': { type: 'weighted', group: 'Program' },
+  'Barbell Row': { type: 'weighted', group: 'Program' },
+  'Pull-Ups': { type: 'bodyweight', group: 'Program' },
+  'Plank': { type: 'timed', group: 'Program' },
+  'Bicep Curls': { type: 'weighted', group: 'Bonus' }
+};
+
+// Infer type from logged data for anything not in the catalog
+function inferLiftType(liftName) {
+  if (KNOWN_LIFTS[liftName]) return KNOWN_LIFTS[liftName].type;
+  const sample = liftEntries.find(e => e.lift === liftName);
+  if (!sample) return 'weighted';
+  if (typeof sample.durationSeconds === 'number') return 'timed';
+  if (sample.equipment === 'bodyweight' || (sample.weight === 0 && typeof sample.reps === 'number')) return 'bodyweight';
+  return 'weighted';
+}
+
+function getLoggedLiftNames() {
   const names = new Set();
-  liftEntries.forEach(e => {
-    if (typeof e.weight === 'number' && e.weight > 0 && typeof e.reps === 'number') names.add(e.lift);
-  });
+  liftEntries.forEach(e => { if (e.lift) names.add(e.lift); });
   return Array.from(names).sort();
 }
 
-// Best estimated 1RM per calendar day for a given lift, chronological
+// Best metric per calendar day for a given lift, chronological.
+// weighted -> best estimated 1RM; bodyweight -> most reps in a set; timed -> longest duration
 function computeLiftProgress(liftName) {
+  const type = inferLiftType(liftName);
   const dayBest = {};
   liftEntries
-    .filter(e => e.lift === liftName && typeof e.weight === 'number' && e.weight > 0 && typeof e.reps === 'number')
+    .filter(e => e.lift === liftName)
     .forEach(e => {
+      let value = null, detail = '';
+      if (type === 'timed' && typeof e.durationSeconds === 'number') {
+        value = e.durationSeconds;
+        detail = `${e.durationSeconds}s`;
+      } else if (type === 'bodyweight' && typeof e.reps === 'number') {
+        value = e.reps;
+        detail = `${e.reps} reps`;
+      } else if (type === 'weighted' && typeof e.weight === 'number' && e.weight > 0 && typeof e.reps === 'number') {
+        value = epley1RM(e.weight, e.reps);
+        detail = `${e.weight}×${e.reps}`;
+      }
+      if (value === null) return;
       const dayKey = new Date(e.timestamp).toDateString();
-      const e1rm = epley1RM(e.weight, e.reps);
-      if (!dayBest[dayKey] || e1rm > dayBest[dayKey].e1rm) {
-        dayBest[dayKey] = { timestamp: e.timestamp, e1rm, weight: e.weight, reps: e.reps };
+      if (!dayBest[dayKey] || value > dayBest[dayKey].value) {
+        dayBest[dayKey] = { timestamp: e.timestamp, value, detail };
       }
     });
-  return Object.values(dayBest).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return { type, points: Object.values(dayBest).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) };
 }
 
+const LIFT_CHART_LABELS = {
+  weighted: { title: 'Estimated 1RM Trend', unit: 'lb', fmt: v => `~${Math.round(v)} lb` },
+  bodyweight: { title: 'Best Set Reps Trend', unit: 'reps', fmt: v => `${Math.round(v)} reps` },
+  timed: { title: 'Best Duration Trend', unit: 's', fmt: v => `${Math.round(v)}s` }
+};
+
 function renderLiftChart(liftName) {
-  const progress = computeLiftProgress(liftName);
-  const series = progress.map(p => ({ timestamp: p.timestamp, raw: p.e1rm, smoothed: p.e1rm }));
+  const { type, points } = computeLiftProgress(liftName);
+  const labels = LIFT_CHART_LABELS[type];
+  document.getElementById('liftChartTitle').textContent = labels.title;
+  const series = points.map(p => ({ timestamp: p.timestamp, raw: p.value, smoothed: p.value }));
   const accent = themeColor('--iron-red', '#c23b22');
   renderTrendChart(document.getElementById('liftChart'), series, accent);
 
   const statEl = document.getElementById('liftStat');
   const subEl = document.getElementById('liftSubstat');
-  if (!progress.length) {
+  if (!points.length) {
     statEl.textContent = '—';
     subEl.textContent = 'No history for this lift yet';
     return;
   }
-  const latest = progress[progress.length - 1];
-  statEl.textContent = `~${Math.round(latest.e1rm)} lb`;
-  const first = progress[0];
-  const totalChange = latest.e1rm - first.e1rm;
+  const latest = points[points.length - 1];
+  statEl.textContent = labels.fmt(latest.value);
+  const first = points[0];
+  const totalChange = latest.value - first.value;
   const sign = totalChange >= 0 ? '+' : '';
-  subEl.textContent = `Top set: ${latest.weight}×${latest.reps} · ${sign}${Math.round(totalChange)} lb since first logged session`;
+  subEl.textContent = `Best: ${latest.detail} · ${sign}${Math.round(totalChange)} ${labels.unit} since first logged session`;
 }
 
 function populateLiftSelect() {
   const select = document.getElementById('liftSelect');
-  const names = getWeightedLiftNames();
+  const names = getLoggedLiftNames();
   select.innerHTML = '';
   if (!names.length) {
     const opt = document.createElement('option');
@@ -499,14 +541,26 @@ function populateLiftSelect() {
     renderTrendChart(document.getElementById('liftChart'), [], themeColor('--iron-red', '#c23b22'));
     return;
   }
+  // Group like the Iron Log dropdown: Program, Bonus, then anything else
+  const groups = { Program: [], Bonus: [], Other: [] };
   names.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
+    const g = KNOWN_LIFTS[name] ? KNOWN_LIFTS[name].group : 'Other';
+    groups[g].push(name);
   });
-  select.value = names[0];
-  renderLiftChart(names[0]);
+  Object.keys(groups).forEach(groupName => {
+    if (!groups[groupName].length) return;
+    const og = document.createElement('optgroup');
+    og.label = groupName;
+    groups[groupName].forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      og.appendChild(opt);
+    });
+    select.appendChild(og);
+  });
+  select.value = select.querySelector('option').value;
+  renderLiftChart(select.value);
 }
 document.getElementById('liftSelect').addEventListener('change', (e) => renderLiftChart(e.target.value));
 

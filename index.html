@@ -68,6 +68,25 @@
     justify-content: space-between;
     gap: 12px;
   }
+  .title-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .reports-btn {
+    background: var(--iron-red);
+    color: #fff;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 9px 14px;
+    text-decoration: none;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .reports-btn:active { filter: brightness(0.82); }
 
   .switch {
     display: flex;
@@ -262,6 +281,12 @@
     transition: background 0.12s, color 0.12s;
   }
   .plate-btn.small { border-color: var(--plate-blue); }
+  .plate-btn.clear-plate {
+    border-style: dashed;
+    border-color: var(--chalk-dim);
+    color: var(--chalk-dim);
+  }
+  .plate-btn.clear-plate:active { background: var(--chalk-dim); color: var(--bg); }
   .plate-btn:active { background: var(--iron-red); color: #fff; }
   .plate-btn.small:active { background: var(--plate-blue); color: #fff; }
 
@@ -738,14 +763,16 @@
 <header>
   <div class="title-row">
     <h1>Iron Log</h1>
-    <label class="switch" title="Girl Mode">
-      <input type="checkbox" id="girlModeToggle">
-      <span class="switch-slider"></span>
-      <span class="switch-label">Girl Mode</span>
-    </label>
+    <div class="title-actions">
+      <a class="reports-btn" href="report.html">📊 Reports</a>
+      <label class="switch" title="Girl Mode">
+        <input type="checkbox" id="girlModeToggle">
+        <span class="switch-slider"></span>
+        <span class="switch-label">Girl Mode</span>
+      </label>
+    </div>
   </div>
   <div class="backup-row">
-    <a class="clear-btn reports-link" href="report.html">📊 Reports</a>
     <button class="clear-btn" id="themeToggleBtn">Theme</button>
   </div>
   <div class="debug-panel" id="themePanel" style="display:none;">
@@ -887,8 +914,7 @@
       </div>
       <div class="weight-readout" id="weightReadout">45 LB BAR</div>
       <div class="bar-controls">
-        <span class="tap-hint">Tap a plate on the bar to pull it</span>
-        <button class="clear-btn" id="clearBtn">Clear bar</button>
+        <span class="tap-hint">Tap a plate on the bar to pull it · Tap 0 to clear</span>
       </div>
     </div>
 
@@ -1219,6 +1245,15 @@ function buildPlateSelector() {
     btn.addEventListener('click', () => addPlate(size));
     sel.appendChild(btn);
   });
+  // The "0" plate: tap to strip the bar back to empty
+  const clearPlate = document.createElement('button');
+  clearPlate.className = 'plate-btn clear-plate';
+  clearPlate.style.width = '30px';
+  clearPlate.style.height = '30px';
+  clearPlate.textContent = '0';
+  clearPlate.title = 'Clear all plates off the bar';
+  clearPlate.addEventListener('click', clearBar);
+  sel.appendChild(clearPlate);
 }
 
 function addPlate(size) {
@@ -1288,7 +1323,6 @@ document.getElementById('weight').addEventListener('input', () => {
     highlightDbSelection(w);
   }
 });
-document.getElementById('clearBtn').addEventListener('click', clearBar);
 
 // --- Dumbbell weight selector ---
 function buildDbSelector() {
