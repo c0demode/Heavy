@@ -481,7 +481,16 @@
     padding: 12px;
   }
   .form-guide-art { text-align: center; }
-  .form-guide-art svg { max-width: 100%; height: auto; }
+  .form-guide-link {
+    display: inline-block;
+    color: var(--iron-red);
+    font-size: 12px;
+    text-decoration: none;
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    letter-spacing: 0.02em;
+  }
+  .form-guide-link:hover { border-color: var(--iron-red); }
   .form-guide-cues {
     margin: 10px 0 0;
     padding-left: 18px;
@@ -1421,133 +1430,38 @@ const CORE_LIFTS = new Set();
 }));
 EXERCISE_TYPES['Bicep Curls'] = 'weighted';
 
-// --- Form guide library ---
-// Consistent inline stick-figure style: same stroke weight, side view, accent-colored bar/load.
-// svgBody returns inner SVG; wrapped with shared frame (ground line, viewBox) at render time.
-const FORM_SVG_FRAME = (inner) => `
-<svg viewBox="0 0 200 120" width="260" xmlns="http://www.w3.org/2000/svg" fill="none"
-     stroke-linecap="round" stroke-linejoin="round">
-  <line x1="10" y1="110" x2="190" y2="110" stroke="var(--line)" stroke-width="2"/>
-  ${inner}
-</svg>`;
-
-const FIG = 'stroke="var(--chalk)" stroke-width="3"';
-const LOAD = 'stroke="var(--iron-red)" stroke-width="4"';
-const GUIDE = 'stroke="var(--plate-blue)" stroke-width="1.5" stroke-dasharray="4 3"';
-
+// --- Form guide library: link to ExRx reference page + quick in-app cues ---
 const EXERCISE_FORMS = {
   'Squat': {
-    svg: `
-      <line x1="40" y1="30" x2="110" y2="30" ${LOAD}/>
-      <circle cx="46" cy="30" r="7" ${LOAD}/>
-      <circle cx="104" cy="30" r="7" ${LOAD}/>
-      <circle cx="75" cy="26" r="8" ${FIG}/>
-      <line x1="75" y1="34" x2="70" y2="62" ${FIG}/>
-      <line x1="70" y1="62" x2="88" y2="78" ${FIG}/>
-      <line x1="88" y1="78" x2="82" y2="110" ${FIG}/>
-      <line x1="75" y1="40" x2="88" y2="30" ${FIG}/>
-      <line x1="130" y1="62" x2="130" y2="110" ${GUIDE}/>
-      <text x="136" y="70" fill="var(--plate-blue)" font-size="9" stroke="none">hip below knee</text>
-    `,
+    url: 'https://exrx.net/WeightExercises/Quadriceps/BBSquat',
     cues: ['Bar on upper back, feet shoulder-width', 'Break at hips and knees together', 'Knees track over toes', 'Depth: hip crease below the knee', 'Drive up through mid-foot, chest up']
   },
   'Bench Press': {
-    svg: `
-      <rect x="45" y="80" width="90" height="8" rx="2" ${FIG} fill="none"/>
-      <line x1="55" y1="88" x2="55" y2="110" ${FIG}/>
-      <line x1="125" y1="88" x2="125" y2="110" ${FIG}/>
-      <circle cx="60" cy="72" r="8" ${FIG}/>
-      <line x1="68" y1="74" x2="120" y2="74" ${FIG}/>
-      <line x1="120" y1="74" x2="138" y2="96" ${FIG}/>
-      <line x1="88" y1="72" x2="88" y2="42" ${FIG}/>
-      <line x1="60" y1="38" x2="116" y2="38" ${LOAD}/>
-      <circle cx="66" cy="38" r="7" ${LOAD}/>
-      <circle cx="110" cy="38" r="7" ${LOAD}/>
-      <line x1="88" y1="38" x2="88" y2="74" ${GUIDE}/>
-    `,
+    url: 'https://exrx.net/WeightExercises/PectoralSternal/BBBenchPress',
     cues: ['Shoulder blades pinned back and down', 'Feet planted, slight arch in lower back', 'Bar touches mid-chest, wrists stacked over elbows', 'Press bar up and slightly back over shoulders']
   },
   'Deadlift': {
-    svg: `
-      <circle cx="72" cy="30" r="8" ${FIG}/>
-      <line x1="74" y1="38" x2="86" y2="66" ${FIG}/>
-      <line x1="86" y1="66" x2="74" y2="86" ${FIG}/>
-      <line x1="74" y1="86" x2="80" y2="110" ${FIG}/>
-      <line x1="76" y1="46" x2="60" y2="88" ${FIG}/>
-      <line x1="30" y1="88" x2="90" y2="88" ${LOAD}/>
-      <circle cx="38" cy="88" r="11" ${LOAD}/>
-      <circle cx="60" cy="96" r="1" stroke="none" fill="var(--chalk)"/>
-      <line x1="60" y1="88" x2="60" y2="110" ${GUIDE}/>
-      <text x="96" y="60" fill="var(--plate-blue)" font-size="9" stroke="none">flat back</text>
-    `,
+    url: 'https://exrx.net/WeightExercises/ErectorSpinae/BBDeadlift',
     cues: ['Bar over mid-foot, shins nearly touching', 'Hinge at hips, flat back, chest proud', 'Pull slack out of the bar before lifting', 'Drive floor away, bar stays against legs', 'Lock out by squeezing glutes, not leaning back']
   },
   'Overhead Press': {
-    svg: `
-      <circle cx="90" cy="42" r="8" ${FIG}/>
-      <line x1="90" y1="50" x2="90" y2="80" ${FIG}/>
-      <line x1="90" y1="80" x2="82" y2="110" ${FIG}/>
-      <line x1="90" y1="80" x2="98" y2="110" ${FIG}/>
-      <line x1="90" y1="56" x2="90" y2="22" ${FIG}/>
-      <line x1="62" y1="18" x2="118" y2="18" ${LOAD}/>
-      <circle cx="68" cy="18" r="7" ${LOAD}/>
-      <circle cx="112" cy="18" r="7" ${LOAD}/>
-      <line x1="90" y1="18" x2="90" y2="110" ${GUIDE}/>
-    `,
+    url: 'https://exrx.net/WeightExercises/DeltoidAnterior/BBMilitaryPress',
     cues: ['Bar at shoulders, forearms vertical', 'Brace core and glutes — no lower-back lean', 'Press straight up, move head back slightly', 'Finish with bar stacked over mid-foot']
   },
   'Barbell Row': {
-    svg: `
-      <circle cx="60" cy="38" r="8" ${FIG}/>
-      <line x1="66" y1="42" x2="104" y2="52" ${FIG}/>
-      <line x1="104" y1="52" x2="96" y2="82" ${FIG}/>
-      <line x1="96" y1="82" x2="102" y2="110" ${FIG}/>
-      <line x1="74" y1="48" x2="70" y2="80" ${FIG}/>
-      <line x1="44" y1="80" x2="98" y2="80" ${LOAD}/>
-      <circle cx="50" cy="80" r="10" ${LOAD}/>
-      <line x1="66" y1="44" x2="104" y2="54" ${GUIDE}/>
-      <text x="110" y="46" fill="var(--plate-blue)" font-size="9" stroke="none">torso ~parallel</text>
-    `,
+    url: 'https://exrx.net/WeightExercises/BackGeneral/BBBentOverRow',
     cues: ['Hinge until torso is near-parallel to floor', 'Neutral spine, knees soft', 'Pull bar to lower chest / upper belly', 'Squeeze shoulder blades at the top, no jerking']
   },
   'Pull-Ups': {
-    svg: `
-      <line x1="40" y1="16" x2="160" y2="16" ${LOAD}/>
-      <circle cx="100" cy="38" r="8" ${FIG}/>
-      <line x1="100" y1="46" x2="100" y2="76" ${FIG}/>
-      <line x1="100" y1="76" x2="94" y2="98" ${FIG}/>
-      <line x1="100" y1="76" x2="106" y2="98" ${FIG}/>
-      <line x1="100" y1="52" x2="82" y2="16" ${FIG}/>
-      <line x1="100" y1="52" x2="118" y2="16" ${FIG}/>
-      <line x1="100" y1="30" x2="100" y2="16" ${GUIDE}/>
-      <text x="118" y="34" fill="var(--plate-blue)" font-size="9" stroke="none">chest to bar</text>
-    `,
+    url: 'https://exrx.net/WeightExercises/LatissimusDorsi/BUPullUp',
     cues: ['Dead hang start — full stretch each rep', 'Pull shoulder blades down first, then elbows', 'Chest toward the bar, not chin poking', 'Control the descent, no half reps']
   },
   'Plank': {
-    svg: `
-      <circle cx="42" cy="70" r="8" ${FIG}/>
-      <line x1="50" y1="74" x2="130" y2="82" ${FIG}/>
-      <line x1="130" y1="82" x2="158" y2="108" ${FIG}/>
-      <line x1="46" y1="78" x2="46" y2="108" ${FIG}/>
-      <line x1="38" y1="108" x2="58" y2="108" ${FIG}/>
-      <line x1="50" y1="72" x2="132" y2="80" ${GUIDE}/>
-      <text x="70" y="62" fill="var(--plate-blue)" font-size="9" stroke="none">straight line head→heels</text>
-    `,
+    url: 'https://exrx.net/WeightExercises/RectusAbdominis/BWFrontPlank',
     cues: ['Elbows under shoulders', 'One straight line: head, hips, heels', 'Squeeze glutes, push floor away', 'Don\'t let hips sag or pike up']
   },
   'Bicep Curls': {
-    svg: `
-      <circle cx="90" cy="34" r="8" ${FIG}/>
-      <line x1="90" y1="42" x2="90" y2="78" ${FIG}/>
-      <line x1="90" y1="78" x2="82" y2="110" ${FIG}/>
-      <line x1="90" y1="78" x2="98" y2="110" ${FIG}/>
-      <line x1="90" y1="50" x2="106" y2="66" ${FIG}/>
-      <line x1="106" y1="66" x2="112" y2="46" ${FIG}/>
-      <line x1="104" y1="42" x2="122" y2="48" ${LOAD}/>
-      <line x1="106" y1="66" x2="106" y2="66" ${GUIDE}/>
-      <text x="118" y="72" fill="var(--plate-blue)" font-size="9" stroke="none">elbow pinned</text>
-    `,
+    url: 'https://exrx.net/WeightExercises/Biceps/BBCurl',
     cues: ['Elbows pinned to your sides', 'Curl without swinging the torso', 'Full range: full stretch at the bottom', 'Lower slowly — the negative builds the muscle']
   }
 };
@@ -1563,7 +1477,8 @@ function renderFormGuide(liftName) {
     return;
   }
   btn.style.display = '';
-  document.getElementById('formGuideArt').innerHTML = FORM_SVG_FRAME(form.svg);
+  document.getElementById('formGuideArt').innerHTML =
+    `<a class="form-guide-link" href="${form.url}" target="_blank" rel="noopener noreferrer">View ${liftName} demo &amp; instructions on ExRx.net ↗</a>`;
   document.getElementById('formGuideCues').innerHTML = form.cues.map(c => `<li>${c}</li>`).join('');
   guide.style.display = formGuideOpen ? '' : 'none';
   btn.classList.toggle('open', formGuideOpen);
