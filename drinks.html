@@ -150,6 +150,7 @@
     pointer-events:none;
   }
   .cal-day.empty{visibility:hidden;}
+  .cal-day.outside{opacity:0.42;}
   .legend{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;}
   .legend .dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle;}
 
@@ -388,17 +389,22 @@ function renderCalendar(){
   const todayKey = todayStr();
   const dayElements = {};
 
-  for(let i=0;i<startOffset;i++){
-    const el = document.createElement('div');
-    el.className = 'cal-day empty';
-    grid.appendChild(el);
+  // Build the full cell list: trailing days of the previous month fill the first week,
+  // then the current month's days.
+  const cells = [];
+  for(let i=startOffset; i>0; i--){
+    cells.push({ dateObj: new Date(year, month, 1-i), inMonth:false });
   }
   for(let d=1; d<=daysInMonth; d++){
-    const dateObj = new Date(year, month, d);
+    cells.push({ dateObj: new Date(year, month, d), inMonth:true });
+  }
+
+  cells.forEach(cell=>{
+    const dateObj = cell.dateObj;
     const key = fmtDate(dateObj);
     const el = document.createElement('div');
-    el.className = 'cal-day';
-    el.innerHTML = `<div class="day-bead">${d}</div>`;
+    el.className = 'cal-day' + (cell.inMonth ? '' : ' outside');
+    el.innerHTML = `<div class="day-bead">${dateObj.getDate()}</div>`;
     if(key === todayKey) el.classList.add('today');
     if(entries[key]){
       el.classList.add(dayColorClass(entries[key].drinks));
@@ -411,20 +417,20 @@ function renderCalendar(){
       window.scrollTo({top:0, behavior:'smooth'});
     });
     grid.appendChild(el);
-    dayElements[d] = el;
-  }
+    dayElements[key] = el;
+  });
 
   // draw a "neck" between consecutive zero-drink days so streaks read as a connected chain of beads
-  for(let d=2; d<=daysInMonth; d++){
-    const prevDateObj = new Date(year, month, d-1);
+  for(let i=1; i<cells.length; i++){
+    const prevDateObj = cells[i-1].dateObj;
     if(prevDateObj.getDay() === 6) continue; // don't chain Saturday into Sunday of the next row
     const prevKey = fmtDate(prevDateObj);
-    const curKey = fmtDate(new Date(year, month, d));
+    const curKey = fmtDate(cells[i].dateObj);
     const prevZero = entries[prevKey] && entries[prevKey].drinks === 0;
     const curZero = entries[curKey] && entries[curKey].drinks === 0;
     if(!prevZero || !curZero) continue;
-    const elA = dayElements[d-1];
-    const elB = dayElements[d];
+    const elA = dayElements[prevKey];
+    const elB = dayElements[curKey];
     if(!elA || !elB) continue;
     const ax = elA.offsetLeft + elA.offsetWidth/2;
     const ay = elA.offsetTop + elA.offsetHeight/2;
