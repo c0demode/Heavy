@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sober Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1a1d23;
+    --surface:#232830;
+    --surface-2:#2c323c;
+    --border:#363d48;
+    --text:#ecebe6;
+    --text-dim:#9aa0a9;
+    --green:#3f8f62;
+    --green-dim:#2d4d3c;
+    --amber:#e0a452;
+    --amber-dim:#4d3f28;
+    --red:#c0483f;
+    --red-dim:#4a2b28;
+    --accent:#4fb6c9;
+    --accent-dim:#2b4045;
+    --gray:#3a4048;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:16px 16px 48px;}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 18px;}
+  .nav a{color:var(--text-dim);text-decoration:none;font-size:14px;font-weight:500;}
+  .nav a:hover{color:var(--text);}
+  .nav .title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.02em;color:var(--text-dim);}
+
+  .hero{
+    text-align:center;
+    padding:22px 10px 26px;
+    background:radial-gradient(ellipse at 50% -20%, var(--accent-dim), transparent 70%), var(--surface);
+    border:1px solid var(--border);
+    border-radius:18px;
+    margin-bottom:16px;
+  }
+  .hero-label{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);font-weight:600;}
+  .odometer{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:64px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    color:var(--accent);
+    line-height:1.1;
+    margin:6px 0 2px;
+    transition:transform 0.25s ease;
+  }
+  .odometer.bump{transform:scale(1.08);}
+  .hero-sub{font-size:13px;color:var(--text-dim);}
+  .stat-row{display:flex;justify-content:center;gap:26px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+  .stat{text-align:center;}
+  .stat b{display:block;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;}
+  .stat span{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin:0 0 12px;
+  }
+
+  .seg{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:14px;}
+  .seg button{
+    flex:1;border:none;background:transparent;color:var(--text-dim);
+    padding:8px 0;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+  }
+  .seg button.active{background:var(--accent);color:#0e1417;}
+
+  .date-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .date-row label{font-size:12px;color:var(--text-dim);}
+  .date-row input[type=date]{
+    flex:1;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:8px 10px;font-family:inherit;font-size:14px;
+  }
+
+  .counter-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+  .counter-row:last-of-type{border-bottom:none;}
+  .counter-row .label{font-size:14px;font-weight:500;}
+  .stepper{display:flex;align-items:center;gap:14px;}
+  .stepper button{
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text);font-size:18px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stepper button:active{background:var(--accent);color:#0e1417;}
+  .stepper .val{min-width:24px;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;}
+
+  .total-line{display:flex;justify-content:space-between;padding:10px 0;font-size:13px;color:var(--text-dim);border-top:1px solid var(--border);margin-top:4px;}
+  .total-line b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:15px;}
+
+  .btn-row{display:flex;gap:10px;margin-top:14px;}
+  .btn{
+    flex:1;border:none;border-radius:10px;padding:12px 0;font-family:inherit;
+    font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .btn-primary{background:var(--green);color:#f2fbf6;}
+  .btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+  .btn:active{filter:brightness(1.15);}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-head button{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;width:30px;height:30px;font-size:15px;cursor:pointer;}
+  .cal-head .month{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;position:relative;}
+  .cal-dow{text-align:center;font-size:10px;color:var(--text-dim);padding-bottom:4px;}
+  .cal-day{
+    aspect-ratio:1;position:relative;z-index:2;cursor:pointer;
+  }
+  .day-bead{
+    position:absolute;inset:8%;
+    border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:600;
+    background:var(--surface-2);color:var(--text-dim);
+    border:1px solid transparent;
+  }
+  .cal-day.zero .day-bead{border-radius:50%;background:var(--green);color:#f2fbf6;}
+  .cal-day.mod .day-bead{background:var(--amber);color:#241a08;}
+  .cal-day.heavy .day-bead{background:var(--red);color:#fbeceb;}
+  .cal-day.today .day-bead{border-color:var(--accent);}
+  .cal-day.selected .day-bead{outline:2px solid var(--text);outline-offset:2px;}
+  .bead-neck{
+    position:absolute;
+    height:9px;
+    background:var(--green);
+    border-radius:5px;
+    z-index:1;
+    pointer-events:none;
+  }
+  .cal-day.empty{visibility:hidden;}
+  .legend{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;}
+  .legend .dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+
+  .range-seg{display:flex;gap:6px;margin-bottom:12px;}
+  .range-seg button{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);
+    border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;
+  }
+  .range-seg button.active{background:var(--accent);color:#0e1417;border-color:var(--accent);}
+  canvas{width:100%;height:150px;display:block;}
+
+  .backup-row{display:flex;gap:10px;}
+  input[type=file]{display:none;}
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;
+    transition:opacity 0.25s ease, transform 0.25s ease;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="nav">
+    <a href="index.html">&larr; Iron Log</a>
+    <span class="title">SOBER LOG</span>
+    <a href="report.html">Report →</a>
+  </div>
+
+  <div class="hero">
+    <div class="hero-label">Current streak</div>
+    <div class="odometer" id="streakNum">0</div>
+    <div class="hero-sub" id="streakSub">days alcohol-free</div>
+    <div class="stat-row">
+      <div class="stat"><b id="longestStreak">0</b><span>Longest streak</span></div>
+      <div class="stat"><b id="totalZero">0</b><span>Zero days logged</span></div>
+      <div class="stat"><b id="totalLogged">0</b><span>Days tracked</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Log a day</h2>
+    <div class="seg">
+      <button id="modeSimpleBtn" class="active">Simple</button>
+      <button id="modeDetailBtn">Detailed</button>
+    </div>
+    <div class="date-row">
+      <label>Date</label>
+      <input type="date" id="entryDate">
+    </div>
+
+    <div id="simpleMode">
+      <div class="counter-row">
+        <div class="label">Drinks</div>
+        <div class="stepper">
+          <button data-step="-1" data-target="simpleCount">−</button>
+          <span class="val" id="simpleCount">0</span>
+          <button data-step="1" data-target="simpleCount">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="detailMode" style="display:none;">
+      <div class="counter-row">
+        <div class="label">Beer</div>
+        <div class="stepper"><button data-step="-1" data-target="cBeer">−</button><span class="val" id="cBeer">0</span><button data-step="1" data-target="cBeer">+</button></div>
+      </div>
+      <div class="counter-row">
+        <div class="label">Wine</div>
+        <div class="stepper"><button data-step="-1" data-target="cWine">−</button><span class="val" id="cWine">0</span><button data-step="1" data-target="cWine">+</button></div>
+      </div>
+      <div class="counter-row">
+        <div class="label">Mixed drink</div>
+        <div class="stepper"><button data-step="-1" data-target="cMixed">−</button><span class="val" id="cMixed">0</span><button data-step="1" data-target="cMixed">+</button></div>
+      </div>
+      <div class="counter-row">
+        <div class="label">Shot</div>
+        <div class="stepper"><button data-step="-1" data-target="cShots">−</button><span class="val" id="cShots">0</span><button data-step="1" data-target="cShots">+</button></div>
+      </div>
+      <div class="total-line"><span>Total standard drinks</span><b id="detailTotal">0</b></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="logZeroBtn">Log Zero Day</button>
+      <button class="btn btn-primary" id="saveEntryBtn">Save Entry</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Calendar</h2>
+    <div class="cal-head">
+      <button id="prevMonth">‹</button>
+      <div class="month" id="monthLabel"></div>
+      <button id="nextMonth">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--green)"></span>Zero</span>
+      <span><span class="dot" style="background:var(--amber)"></span>1–2 drinks</span>
+      <span><span class="dot" style="background:var(--red)"></span>3+ drinks</span>
+      <span><span class="dot" style="background:var(--surface-2)"></span>Not logged</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Trend</h2>
+    <div class="range-seg">
+      <button data-range="30" class="active">30d</button>
+      <button data-range="90">90d</button>
+      <button data-range="all">All</button>
+    </div>
+    <canvas id="trendChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Backup</h2>
+    <div class="backup-row">
+      <button class="btn btn-ghost" id="exportBtn">Export Backup</button>
+      <button class="btn btn-ghost" id="importBtn">Load Backup</button>
+    </div>
+    <input type="file" id="fileInput" accept="application/json">
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'soberlog_entries_v1';
+let entries = {}; // { 'YYYY-MM-DD': { drinks, mode, detail:{beer,wine,mixed,shots} } }
+let calCursor = new Date();
+let currentMode = 'simple';
+let simpleCount = 0;
+let detail = { beer:0, wine:0, mixed:0, shots:0 };
+let trendRange = 30;
+
+function todayStr(){ return fmtDate(new Date()); }
+function fmtDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    entries = raw ? JSON.parse(raw) : {};
+  }catch(e){ entries = {}; }
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function dayColorClass(drinks){
+  if(drinks === 0) return 'zero';
+  if(drinks <= 2) return 'mod';
+  return 'heavy';
+}
+
+function computeStats(){
+  const dates = Object.keys(entries).sort();
+  let totalZero=0, totalLogged=dates.length;
+  dates.forEach(d=>{ if(entries[d].drinks === 0) totalZero++; });
+
+  // current streak: walk backward from today, must have consecutive logged zero days
+  let streak = 0;
+  let cursor = new Date();
+  while(true){
+    const key = fmtDate(cursor);
+    if(entries[key] && entries[key].drinks === 0){
+      streak++;
+      cursor.setDate(cursor.getDate()-1);
+    } else {
+      break;
+    }
+  }
+
+  // longest streak ever, computed over full sorted date range including gaps as breaks
+  let longest = 0, run = 0, prevDate = null;
+  dates.forEach(d=>{
+    const isZero = entries[d].drinks === 0;
+    const dObj = parseDate(d);
+    if(isZero){
+      if(prevDate){
+        const diffDays = Math.round((dObj - prevDate)/86400000);
+        if(diffDays === 1){ run++; } else { run = 1; }
+      } else { run = 1; }
+      longest = Math.max(longest, run);
+      prevDate = dObj;
+    } else {
+      run = 0;
+      prevDate = null;
+    }
+  });
+  longest = Math.max(longest, streak);
+
+  document.getElementById('streakNum').textContent = streak;
+  document.getElementById('streakSub').textContent = streak === 1 ? 'day alcohol-free' : 'days alcohol-free';
+  document.getElementById('longestStreak').textContent = longest;
+  document.getElementById('totalZero').textContent = totalZero;
+  document.getElementById('totalLogged').textContent = totalLogged;
+
+  const num = document.getElementById('streakNum');
+  num.classList.add('bump');
+  setTimeout(()=>num.classList.remove('bump'), 250);
+}
+
+function renderCalendar(){
+  const year = calCursor.getFullYear();
+  const month = calCursor.getMonth();
+  document.getElementById('monthLabel').textContent =
+    calCursor.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const dowLabels = ['S','M','T','W','T','F','S'];
+  dowLabels.forEach(l=>{
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = l;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayKey = todayStr();
+  const dayElements = {};
+
+  for(let i=0;i<startOffset;i++){
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(year, month, d);
+    const key = fmtDate(dateObj);
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    el.innerHTML = `<div class="day-bead">${d}</div>`;
+    if(key === todayKey) el.classList.add('today');
+    if(entries[key]){
+      el.classList.add(dayColorClass(entries[key].drinks));
+    }
+    if(key === document.getElementById('entryDate').value) el.classList.add('selected');
+    el.addEventListener('click', ()=>{
+      document.getElementById('entryDate').value = key;
+      loadEntryIntoForm(key);
+      renderCalendar();
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+    grid.appendChild(el);
+    dayElements[d] = el;
+  }
+
+  // draw a "neck" between consecutive zero-drink days so streaks read as a connected chain of beads
+  for(let d=2; d<=daysInMonth; d++){
+    const prevDateObj = new Date(year, month, d-1);
+    if(prevDateObj.getDay() === 6) continue; // don't chain Saturday into Sunday of the next row
+    const prevKey = fmtDate(prevDateObj);
+    const curKey = fmtDate(new Date(year, month, d));
+    const prevZero = entries[prevKey] && entries[prevKey].drinks === 0;
+    const curZero = entries[curKey] && entries[curKey].drinks === 0;
+    if(!prevZero || !curZero) continue;
+    const elA = dayElements[d-1];
+    const elB = dayElements[d];
+    if(!elA || !elB) continue;
+    const ax = elA.offsetLeft + elA.offsetWidth/2;
+    const ay = elA.offsetTop + elA.offsetHeight/2;
+    const bx = elB.offsetLeft + elB.offsetWidth/2;
+    const by = elB.offsetTop + elB.offsetHeight/2;
+    const dx = bx-ax, dy = by-ay;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const angle = Math.atan2(dy, dx) * 180/Math.PI;
+    const neck = document.createElement('div');
+    neck.className = 'bead-neck';
+    neck.style.width = dist + 'px';
+    neck.style.left = ax + 'px';
+    neck.style.top = ay + 'px';
+    neck.style.transformOrigin = '0 50%';
+    neck.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+    grid.appendChild(neck);
+  }
+}
+
+function loadEntryIntoForm(key){
+  const e = entries[key];
+  if(!e){
+    simpleCount = 0;
+    detail = { beer:0, wine:0, mixed:0, shots:0 };
+  } else if(e.mode === 'detailed' && e.detail){
+    detail = {...e.detail};
+    simpleCount = e.drinks;
+    setMode('detailed');
+  } else {
+    simpleCount = e.drinks;
+  }
+  refreshCounters();
+}
+
+function refreshCounters(){
+  document.getElementById('simpleCount').textContent = simpleCount;
+  document.getElementById('cBeer').textContent = detail.beer;
+  document.getElementById('cWine').textContent = detail.wine;
+  document.getElementById('cMixed').textContent = detail.mixed;
+  document.getElementById('cShots').textContent = detail.shots;
+  const total = detail.beer + detail.wine + detail.mixed + detail.shots;
+  document.getElementById('detailTotal').textContent = total;
+}
+
+function setMode(mode){
+  currentMode = mode;
+  document.getElementById('modeSimpleBtn').classList.toggle('active', mode==='simple');
+  document.getElementById('modeDetailBtn').classList.toggle('active', mode==='detailed');
+  document.getElementById('simpleMode').style.display = mode==='simple' ? 'block':'none';
+  document.getElementById('detailMode').style.display = mode==='detailed' ? 'block':'none';
+}
+
+function renderTrend(){
+  const canvas = document.getElementById('trendChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 150 * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const w = rect.width, h = 150;
+  ctx.clearRect(0,0,w,h);
+
+  const allDates = Object.keys(entries).sort();
+  if(allDates.length === 0){
+    ctx.fillStyle = '#9aa0a9';
+    ctx.font = '13px Inter';
+    ctx.fillText('No entries yet', 10, h/2);
+    return;
+  }
+
+  let days;
+  if(trendRange === 'all'){
+    const first = parseDate(allDates[0]);
+    const last = new Date();
+    days = Math.round((last-first)/86400000)+1;
+  } else {
+    days = trendRange;
+  }
+  const points = [];
+  const cursor = new Date();
+  cursor.setDate(cursor.getDate() - (days-1));
+  for(let i=0;i<days;i++){
+    const key = fmtDate(cursor);
+    points.push(entries[key] ? entries[key].drinks : null);
+    cursor.setDate(cursor.getDate()+1);
+  }
+
+  const maxVal = Math.max(4, ...points.filter(p=>p!==null));
+  const padL = 6, padR = 6, padT = 10, padB = 16;
+  const chartW = w - padL - padR;
+  const chartH = h - padT - padB;
+  const barW = Math.max(1, chartW/points.length - 2);
+
+  points.forEach((val,i)=>{
+    const x = padL + (chartW/points.length)*i;
+    if(val === null) return;
+    const barH = (val/maxVal) * chartH;
+    ctx.fillStyle = val===0 ? '#3f8f62' : (val<=2 ? '#e0a452' : '#c0483f');
+    ctx.fillRect(x, padT + (chartH-barH), barW, barH);
+  });
+
+  // 7-day rolling average line
+  ctx.beginPath();
+  let started = false;
+  points.forEach((val,i)=>{
+    const windowVals = [];
+    for(let j=Math.max(0,i-6); j<=i; j++){
+      if(points[j]!==null) windowVals.push(points[j]);
+    }
+    if(windowVals.length===0) return;
+    const avg = windowVals.reduce((a,b)=>a+b,0)/windowVals.length;
+    const x = padL + (chartW/points.length)*i + barW/2;
+    const y = padT + (chartH - (avg/maxVal)*chartH);
+    if(!started){ ctx.moveTo(x,y); started=true; } else { ctx.lineTo(x,y); }
+  });
+  ctx.strokeStyle = '#4fb6c9';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// --- Event wiring ---
+document.getElementById('modeSimpleBtn').addEventListener('click', ()=>setMode('simple'));
+document.getElementById('modeDetailBtn').addEventListener('click', ()=>setMode('detailed'));
+
+document.querySelectorAll('.stepper button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const step = parseInt(btn.dataset.step, 10);
+    const target = btn.dataset.target;
+    if(target === 'simpleCount'){
+      simpleCount = Math.max(0, simpleCount + step);
+    } else {
+      const map = { cBeer:'beer', cWine:'wine', cMixed:'mixed', cShots:'shots' };
+      const key = map[target];
+      detail[key] = Math.max(0, detail[key] + step);
+    }
+    refreshCounters();
+  });
+});
+
+document.getElementById('entryDate').value = todayStr();
+document.getElementById('entryDate').addEventListener('change', (e)=>{
+  loadEntryIntoForm(e.target.value);
+  renderCalendar();
+});
+
+document.getElementById('logZeroBtn').addEventListener('click', ()=>{
+  const key = document.getElementById('entryDate').value || todayStr();
+  entries[key] = { drinks:0, mode:'simple', detail:null };
+  save();
+  simpleCount = 0;
+  detail = { beer:0, wine:0, mixed:0, shots:0 };
+  refreshCounters();
+  computeStats();
+  renderCalendar();
+  renderTrend();
+  showToast('Zero day logged 🌱');
+});
+
+document.getElementById('saveEntryBtn').addEventListener('click', ()=>{
+  const key = document.getElementById('entryDate').value || todayStr();
+  if(currentMode === 'simple'){
+    entries[key] = { drinks: simpleCount, mode:'simple', detail:null };
+  } else {
+    const total = detail.beer + detail.wine + detail.mixed + detail.shots;
+    entries[key] = { drinks: total, mode:'detailed', detail: {...detail} };
+  }
+  save();
+  computeStats();
+  renderCalendar();
+  renderTrend();
+  showToast('Entry saved');
+});
+
+document.getElementById('prevMonth').addEventListener('click', ()=>{
+  calCursor.setMonth(calCursor.getMonth()-1);
+  renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', ()=>{
+  calCursor.setMonth(calCursor.getMonth()+1);
+  renderCalendar();
+});
+
+document.querySelectorAll('.range-seg button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.range-seg button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    trendRange = btn.dataset.range === 'all' ? 'all' : parseInt(btn.dataset.range,10);
+    renderTrend();
+  });
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify({ soberlog_entries: entries, exportedAt: new Date().toISOString() }, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `soberlog-backup-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Backup exported');
+});
+
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  document.getElementById('fileInput').click();
+});
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const data = JSON.parse(evt.target.result);
+      const incoming = data.soberlog_entries || data;
+      const count = Object.keys(incoming).length;
+      if(!confirm(`This backup has ${count} logged day(s). Replace your current log with this backup?`)) return;
+      entries = incoming;
+      save();
+      computeStats();
+      renderCalendar();
+      renderTrend();
+      showToast('Backup loaded');
+    }catch(err){
+      alert('Could not read that file — make sure it\'s a Sober Log backup JSON.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+window.addEventListener('resize', renderTrend);
+
+// --- Init ---
+load();
+loadEntryIntoForm(todayStr());
+computeStats();
+renderCalendar();
+renderTrend();
+</script>
+</body>
+</html>
