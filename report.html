@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Iron Log — Reports</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
   :root {
-    --bg: #16171a;
-    --panel: #1f2124;
-    --line: #34373c;
-    --chalk: #ede9e1;
-    --chalk-dim: #8c8f94;
-    --iron-red: #c23b22;
-    --plate-blue: #5b6470;
-    --ok-green: #5e8c61;
+    --bg: #1a1d23;
+    --panel: #232830;
+    --line: #363d48;
+    --chalk: #ecebe6;
+    --chalk-dim: #9aa0a9;
+    --iron-red: #4fb6c9;
+    --plate-blue: #6f7885;
+    --ok-green: #3f8f62;
+    --red: #c0483f;
+    --amber: #e0a452;
   }
   body.girl-mode {
     --bg: #fff6fa;
@@ -26,6 +28,8 @@
     --iron-red: #ec4899;
     --plate-blue: #f9a8d4;
     --ok-green: #4caf7d;
+    --red: #e5484d;
+    --amber: #d9a441;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -34,12 +38,12 @@
     margin: 0;
     background: var(--bg);
     color: var(--chalk);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     min-height: 100vh;
     padding-bottom: 40px;
   }
   h1, h2, .display {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -57,35 +61,36 @@
   .back-link {
     background: var(--iron-red);
     border: none;
-    color: #fff;
-    font-family: 'Oswald', sans-serif;
+    color: #0e1417;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 13px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 10px 16px;
+    letter-spacing: 0.02em;
+    padding: 9px 14px;
     text-decoration: none;
     display: inline-block;
     flex-shrink: 0;
+    border-radius: 10px;
   }
-  .back-link:active { filter: brightness(0.82); }
+  .back-link:active { filter: brightness(1.12); }
 
-  main { padding: 18px; max-width: 480px; margin: 0 auto; }
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
 
   .panel {
     background: var(--panel);
     border: 1px solid var(--line);
-    padding: 18px;
-    margin-bottom: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 16px;
   }
 
   .panel-title {
-    font-family: 'Oswald', sans-serif;
-    font-size: 15px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     margin: 0 0 14px;
-    color: var(--chalk);
+    color: var(--chalk-dim);
   }
 
   .field-row { display: flex; gap: 10px; margin-bottom: 12px; }
@@ -104,32 +109,33 @@
     border: 1px solid var(--line);
     color: var(--chalk);
     padding: 10px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 16px;
+    border-radius: 8px;
   }
   input:focus, select:focus { outline: none; border-color: var(--iron-red); }
 
   .log-btn {
     width: 100%;
-    background: var(--iron-red);
-    color: #fff;
+    background: var(--ok-green);
+    color: #f2fbf6;
     border: none;
-    padding: 14px;
-    font-family: 'Oswald', sans-serif;
+    padding: 13px;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 15px;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0.03em;
     cursor: pointer;
+    border-radius: 10px;
   }
-  .log-btn:active { filter: brightness(0.82); }
+  .log-btn:active { filter: brightness(1.12); }
 
   .chart-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
   .chart-block:first-child { margin-top: 0; padding-top: 0; border-top: none; }
   .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-  .chart-title { font-family: 'Oswald', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--chalk-dim); }
-  .chart-stat { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); }
-  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: var(--bg); }
+  .chart-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--chalk-dim); }
+  .chart-stat { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); }
+  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; }
   .chart-substat { font-size: 10px; color: var(--chalk-dim); margin-top: 6px; text-align: right; }
 
   .ledger-day { margin-bottom: 4px; }
@@ -138,7 +144,7 @@
     padding: 14px 0 6px; border-bottom: 1px solid var(--line);
   }
   .entry { display: flex; justify-content: space-between; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--line); }
-  .entry .name { font-family: 'Oswald', sans-serif; font-size: 14px; letter-spacing: 0.03em; }
+  .entry .name { font-family: 'Space Grotesk', sans-serif; font-size: 14px; letter-spacing: 0.03em; }
   .entry .load { font-size: 15px; color: var(--chalk); }
   .entry .time { font-size: 10px; color: var(--chalk-dim); margin-left: 8px; }
   .entry .del { background: none; border: none; color: var(--chalk-dim); font-size: 14px; cursor: pointer; padding: 0 0 0 12px; }
@@ -300,7 +306,7 @@ function renderTrendChart(canvas, series, color) {
 
   if (!series.length) {
     ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
-    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.font = '11px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('No data yet', cssWidth / 2, cssHeight / 2);
     return;

@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Iron Log</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
   :root {
-    --bg: #16171a;
-    --panel: #1f2124;
-    --line: #34373c;
-    --chalk: #ede9e1;
-    --chalk-dim: #8c8f94;
-    --iron-red: #c23b22;
-    --plate-blue: #5b6470;
-    --ok-green: #5e8c61;
+    --bg: #1a1d23;
+    --panel: #232830;
+    --line: #363d48;
+    --chalk: #ecebe6;
+    --chalk-dim: #9aa0a9;
+    --iron-red: #4fb6c9;
+    --plate-blue: #6f7885;
+    --ok-green: #3f8f62;
+    --red: #c0483f;
+    --amber: #e0a452;
   }
 
   body.girl-mode {
@@ -27,8 +29,9 @@
     --iron-red: #ec4899;
     --plate-blue: #f9a8d4;
     --ok-green: #4caf7d;
+    --red: #e5484d;
+    --amber: #d9a441;
   }
-  body.girl-mode .log-btn:active { background: #d63384; }
   body.girl-mode .bar-panel,
   body.girl-mode .debug-panel,
   body.girl-mode .drive-setup-body { box-shadow: 0 1px 3px rgba(236, 72, 153, 0.08); }
@@ -39,13 +42,13 @@
     margin: 0;
     background: var(--bg);
     color: var(--chalk);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     min-height: 100vh;
     padding-bottom: 40px;
   }
 
   h1, .display {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -75,18 +78,18 @@
   }
   .reports-btn {
     background: var(--iron-red);
-    color: #fff;
-    font-family: 'Oswald', sans-serif;
+    color: #0e1417;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 13px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     padding: 9px 14px;
     text-decoration: none;
     display: inline-block;
     flex-shrink: 0;
+    border-radius: 10px;
   }
-  .reports-btn:active { filter: brightness(0.82); }
+  .reports-btn:active { filter: brightness(1.12); }
 
   .switch {
     display: flex;
@@ -137,7 +140,8 @@
   }
   .theme-actions .clear-btn {
     border: 1px solid var(--line);
-    padding: 6px 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
   }
   .theme-actions .clear-btn:hover { border-color: var(--chalk-dim); }
   .theme-current-row {
@@ -157,7 +161,7 @@
   .swatch {
     width: 16px;
     height: 16px;
-    border-radius: 3px;
+    border-radius: 4px;
     border: 1px solid rgba(128,128,128,0.25);
     flex-shrink: 0;
   }
@@ -180,7 +184,7 @@
   .favorite-name {
     font-size: 11px;
     color: var(--chalk);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     white-space: nowrap;
   }
   .favorite-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -190,8 +194,9 @@
     color: var(--chalk-dim);
     font-size: 10px;
     text-transform: uppercase;
-    padding: 4px 8px;
+    padding: 4px 10px;
     cursor: pointer;
+    border-radius: 7px;
   }
   .favorite-apply:hover { color: var(--chalk); border-color: var(--chalk-dim); }
   .favorite-del {
@@ -228,8 +233,9 @@
   .bar-panel {
     background: var(--panel);
     border: 1px solid var(--line);
-    padding: 18px;
-    margin-bottom: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 16px;
   }
 
   .bar-rack {
@@ -270,7 +276,7 @@
     border: 2px solid var(--iron-red);
     background: transparent;
     color: var(--chalk);
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
     font-size: 12px;
     display: flex;
@@ -292,43 +298,50 @@
 
   .equip-toggle {
     display: flex;
+    background: var(--bg);
     border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
   }
   .equip-btn {
     flex: 1;
-    background: var(--bg);
+    background: transparent;
     color: var(--chalk-dim);
     border: none;
-    padding: 10px;
-    font-family: 'IBM Plex Mono', monospace;
+    padding: 8px;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
+    border-radius: 8px;
   }
-  .equip-btn + .equip-btn { border-left: 1px solid var(--line); }
-  .equip-btn.active { background: var(--iron-red); color: #fff; }
+  .equip-btn.active { background: var(--iron-red); color: #0e1417; }
 
   .db-selector { justify-content: flex-start; }
   .db-btn {
-    border: 2px solid var(--plate-blue);
-    background: transparent;
+    border: 1px solid var(--line);
+    background: var(--bg);
     color: var(--chalk);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 12px;
+    font-weight: 600;
     padding: 8px 4px;
     min-width: 44px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 8px;
   }
-  .db-btn.selected { background: var(--plate-blue); color: #fff; }
+  .db-btn.selected { background: var(--iron-red); color: #0e1417; border-color: var(--iron-red); }
 
   .equip-tag {
     font-size: 9px;
     color: var(--chalk-dim);
     border: 1px solid var(--line);
-    padding: 1px 4px;
+    padding: 1px 5px;
     margin-left: 5px;
     vertical-align: middle;
     letter-spacing: 0.04em;
+    border-radius: 5px;
   }
 
   .timer-panel { margin-top: -6px; }
@@ -338,14 +351,14 @@
     align-items: baseline;
   }
   .timer-title {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--chalk-dim);
   }
   .timer-display {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 28px;
     font-weight: 600;
     color: var(--chalk);
@@ -364,12 +377,14 @@
     background: var(--bg);
     border: 1px solid var(--line);
     color: var(--chalk);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 12px;
+    font-weight: 600;
     padding: 8px 4px;
     cursor: pointer;
+    border-radius: 8px;
   }
-  .preset-btn:active, .preset-btn.active-preset { border-color: var(--plate-blue); color: var(--plate-blue); }
+  .preset-btn:active, .preset-btn.active-preset { border-color: var(--iron-red); color: var(--iron-red); }
   .timer-controls {
     display: flex;
     gap: 8px;
@@ -378,9 +393,8 @@
   .timer-ctrl {
     flex: 1;
     width: auto;
-    font-family: 'Oswald', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.02em;
     font-size: 13px;
   }
 
@@ -391,7 +405,7 @@
     margin-bottom: 10px;
   }
   .workout-title {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 15px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -408,7 +422,7 @@
   .workout-item:last-child { border-bottom: none; }
   .workout-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .workout-item-name {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 14px;
     letter-spacing: 0.02em;
   }
@@ -437,14 +451,15 @@
     background: none;
     border: 1px solid var(--iron-red);
     color: var(--iron-red);
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 6px 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 6px 12px;
     cursor: pointer;
+    border-radius: 8px;
   }
-  .workout-log-btn:active { background: var(--iron-red); color: #fff; }
+  .workout-log-btn:active { background: var(--iron-red); color: #0e1417; }
 
   .coaching-note {
     font-size: 11px;
@@ -462,13 +477,14 @@
     background: var(--bg);
     border: 1px dashed var(--line);
     color: var(--chalk-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
     padding: 9px;
     cursor: pointer;
     margin-bottom: 14px;
+    border-radius: 8px;
   }
   .show-me-btn:active, .show-me-btn.open {
     border-color: var(--iron-red);
@@ -479,6 +495,7 @@
     background: var(--bg);
     margin: -8px 0 14px;
     padding: 12px;
+    border-radius: 10px;
   }
   .form-guide-art { text-align: center; }
   .form-guide-link {
@@ -489,6 +506,7 @@
     border: 1px solid var(--line);
     padding: 8px 12px;
     letter-spacing: 0.02em;
+    border-radius: 8px;
   }
   .form-guide-link:hover { border-color: var(--iron-red); }
   .form-guide-cues {
@@ -530,10 +548,10 @@
     background: var(--bg);
     border: 1px solid var(--line);
     color: var(--chalk-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    letter-spacing: 0.03em;
     padding: 10px;
     cursor: pointer;
     margin-bottom: 14px;
@@ -541,12 +559,13 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
+    border-radius: 10px;
   }
   .failure-icon { filter: grayscale(1); opacity: 0.5; font-size: 13px; }
   .failure-toggle.active {
-    border-color: var(--iron-red);
-    color: var(--iron-red);
-    background: rgba(194, 59, 34, 0.08);
+    border-color: var(--red, #c0483f);
+    color: var(--red, #c0483f);
+    background: rgba(192, 72, 63, 0.10);
   }
   .failure-toggle.active .failure-icon { filter: none; opacity: 1; }
   .failure-tag {
@@ -566,10 +585,11 @@
     background: var(--bg);
     border: 1px solid var(--line);
     color: var(--chalk);
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 18px;
     font-weight: 600;
     cursor: pointer;
+    border-radius: 8px;
   }
   .step-btn:active { border-color: var(--iron-red); color: var(--iron-red); }
   .reps-stepper input { text-align: center; }
@@ -602,6 +622,8 @@
     margin-top: 10px;
     border: 1px solid var(--line);
     background: var(--panel);
+    border-radius: 12px;
+    overflow: hidden;
   }
   .debug-panel-header {
     display: flex;
@@ -645,7 +667,7 @@
     border-bottom: 1px solid var(--line);
   }
   .drive-setup-body .mono {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     color: var(--chalk);
   }
   .drive-id-row {
@@ -660,16 +682,18 @@
     color: var(--chalk);
     padding: 8px;
     font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
+    border-radius: 8px;
   }
   .drive-id-row button {
     background: none;
     border: 1px solid var(--line);
     color: var(--chalk-dim);
     font-size: 11px;
-    padding: 0 12px;
+    padding: 0 14px;
     cursor: pointer;
     text-transform: uppercase;
+    border-radius: 8px;
   }
   .drive-id-row button:hover { color: var(--chalk); border-color: var(--chalk-dim); }
   .manual-copy {
@@ -678,7 +702,7 @@
     background: var(--bg);
     color: var(--chalk);
     border: 1px solid var(--line);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 10px;
     padding: 6px;
     display: none;
@@ -693,7 +717,7 @@
   .backup-row .clear-btn { padding: 0; }
 
   .weight-readout {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 13px;
     color: var(--chalk-dim);
     text-align: center;
@@ -717,9 +741,9 @@
     border: 1px solid var(--line);
     color: var(--chalk);
     padding: 10px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 16px;
-    border-radius: 0;
+    border-radius: 8px;
   }
   select:focus, input:focus {
     outline: none;
@@ -730,19 +754,19 @@
 
   .log-btn {
     width: 100%;
-    background: var(--iron-red);
-    color: #fff;
+    background: var(--ok-green);
+    color: #f2fbf6;
     border: none;
-    padding: 14px;
-    font-family: 'Oswald', sans-serif;
-    font-size: 16px;
+    padding: 13px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0.03em;
     cursor: pointer;
     margin-top: 4px;
+    border-radius: 10px;
   }
-  .log-btn:active { filter: brightness(0.82); }
+  .log-btn:active { filter: brightness(1.12); }
   .log-btn:disabled { background: var(--plate-blue); cursor: default; }
 
   .ledger-day {
@@ -764,7 +788,7 @@
     border-bottom: 1px solid var(--line);
   }
   .entry .lift {
-    font-family: 'Oswald', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 14px;
     letter-spacing: 0.03em;
   }
