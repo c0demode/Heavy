@@ -131,6 +131,31 @@
   .range-preview.warn{border-color:var(--amber);}
   .range-preview.err{border-color:var(--red);color:var(--red);}
 
+  .heatmap-scroll{overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+  .heatmap{
+    display:grid;
+    grid-auto-flow:column;
+    grid-template-rows:repeat(7, 13px);
+    grid-auto-columns:13px;
+    gap:3px;
+    min-width:max-content;
+  }
+  .hm-cell{
+    width:13px;height:13px;border-radius:3px;background:var(--surface-2);
+  }
+  .hm-cell.zero{background:var(--green);}
+  .hm-cell.light{background:var(--amber);}
+  .hm-cell.heavy{background:var(--red);}
+  .hm-cell.future{background:transparent;}
+  .hm-cell.today{outline:2px solid var(--text);outline-offset:1px;}
+  .hm-month-row{
+    display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;
+    min-width:max-content;margin-bottom:5px;
+  }
+  .hm-month-lbl{font-size:10px;color:var(--text-dim);white-space:nowrap;}
+  .heatmap-legend{align-items:center;gap:6px;}
+  .hm-key{width:13px;height:13px;border-radius:3px;display:inline-block;}
+
   .btn-row{display:flex;gap:10px;margin-top:14px;}
   .btn{
     flex:1;border:none;border-radius:10px;padding:12px 0;font-family:inherit;
@@ -309,6 +334,21 @@
       <span><span class="dot" style="background:var(--amber)"></span>1–2 drinks</span>
       <span><span class="dot" style="background:var(--red)"></span>3+ drinks</span>
       <span><span class="dot" style="background:var(--surface-2)"></span>Not logged</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Year Heatmap</h2>
+    <div class="heatmap-scroll">
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+    <div class="legend heatmap-legend">
+      <span>Less</span>
+      <span class="hm-key" style="background:var(--surface-2)"></span>
+      <span class="hm-key" style="background:var(--green)"></span>
+      <span class="hm-key" style="background:var(--amber)"></span>
+      <span class="hm-key" style="background:var(--red)"></span>
+      <span>More drinks</span>
     </div>
   </div>
 
@@ -589,6 +629,51 @@ function setMode(mode){
   if(isRange) updateRangePreview();
 }
 
+function renderHeatmap(){
+  const container = document.getElementById('heatmap');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayKey = fmtDate(today);
+
+  // Grid starts 52 weeks back, aligned to Sunday so rows = weekdays (GitHub style).
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
+  start.setDate(start.getDate() - start.getDay()); // back up to Sunday
+
+  const cur = new Date(start);
+  // iterate week by week (columns), day by day (rows)
+  while(cur <= today || cur.getDay() !== 0){
+    const key = fmtDate(cur);
+    const cell = document.createElement('div');
+    cell.className = 'hm-cell';
+    if(cur > today){
+      cell.classList.add('future');
+    } else if(entries[key]){
+      cell.classList.add(dayColorClass(entries[key].drinks));
+      const n = entries[key].drinks;
+      cell.title = `${cur.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})} · ${n} drink${n===1?'':'s'}`;
+    } else {
+      cell.title = `${cur.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})} · not logged`;
+    }
+    if(key === todayKey) cell.classList.add('today');
+    cell.addEventListener('click', ()=>{
+      if(cur > today) return;
+      document.getElementById('entryDate').value = key;
+      if(currentMode === 'range') setMode('simple');
+      loadEntryIntoForm(key);
+      renderCalendar();
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+    container.appendChild(cell);
+    cur.setDate(cur.getDate() + 1);
+  }
+  // map dayColorClass 'mod' -> 'light' class used by heatmap
+  container.querySelectorAll('.hm-cell.mod').forEach(c=>{ c.classList.remove('mod'); c.classList.add('light'); });
+}
+
 function renderTrend(){
   const canvas = document.getElementById('trendChart');
   const ctx = canvas.getContext('2d');
@@ -699,6 +784,7 @@ document.getElementById('logZeroBtn').addEventListener('click', ()=>{
   computeStats();
   renderCalendar();
   renderTrend();
+  renderHeatmap();
   showToast('Zero day logged 🌱');
 });
 
@@ -714,6 +800,7 @@ document.getElementById('saveEntryBtn').addEventListener('click', ()=>{
   computeStats();
   renderCalendar();
   renderTrend();
+  renderHeatmap();
   showToast('Entry saved');
 });
 
@@ -804,6 +891,7 @@ document.getElementById('saveRangeBtn').addEventListener('click', ()=>{
   computeStats();
   renderCalendar();
   renderTrend();
+  renderHeatmap();
   showToast(`Filled ${written} day${written===1?'':'s'}${skipped ? ` · ${skipped} skipped` : ''} ✓`);
   updateRangePreview();
 });
@@ -823,6 +911,7 @@ document.querySelectorAll('.range-seg button').forEach(btn=>{
     btn.classList.add('active');
     trendRange = btn.dataset.range === 'all' ? 'all' : parseInt(btn.dataset.range,10);
     renderTrend();
+    renderHeatmap();
   });
 });
 
@@ -857,6 +946,7 @@ document.getElementById('fileInput').addEventListener('change', (e)=>{
       computeStats();
       renderCalendar();
       renderTrend();
+      renderHeatmap();
       showToast('Backup loaded');
     }catch(err){
       alert('Could not read that file — make sure it\'s a Sober Log backup JSON.');
@@ -874,6 +964,7 @@ loadEntryIntoForm(todayStr());
 computeStats();
 renderCalendar();
 renderTrend();
+renderHeatmap();
 </script>
 </body>
 </html>
