@@ -58,6 +58,7 @@
     transition:transform 0.25s ease;
   }
   .odometer.bump{transform:scale(1.08);}
+  .odometer.compact{font-size:46px;}
   .hero-sub{font-size:13px;color:var(--text-dim);}
   .stat-row{display:flex;justify-content:center;gap:26px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
   .stat{text-align:center;}
@@ -177,9 +178,9 @@
 <div class="wrap">
 
   <div class="nav">
-    <a href="index.html">&larr; Iron Log</a>
+    <a href="report.html">&larr; Reports</a>
     <span class="title">SOBER LOG</span>
-    <a href="report.html">Report →</a>
+    <a href="index.html">Iron Log →</a>
   </div>
 
   <div class="hero">
@@ -319,14 +320,54 @@ function dayColorClass(drinks){
   return 'heavy';
 }
 
+// Progressive granularity: days → weeks+days → months+weeks → years+months.
+// Once the streak is long enough that individual days stop mattering, we stop showing them.
+const DAYS_PER_MONTH = 30.44;
+function plural(n, unit){ return n + ' ' + unit + (n === 1 ? '' : 's'); }
+
+function formatStreak(days){
+  if(days < 7){
+    return { big: String(days), sub: (days === 1 ? 'day' : 'days') + ' alcohol-free' };
+  }
+  if(days < 30){
+    const w = Math.floor(days / 7);
+    const d = days % 7;
+    const words = [plural(w, 'week')];
+    if(d) words.push(plural(d, 'day'));
+    return { big: w + 'w' + (d ? ' ' + d + 'd' : ''), sub: words.join(' ') + ' alcohol-free' };
+  }
+  if(days < 365){
+    let m = Math.floor(days / DAYS_PER_MONTH);
+    let w = Math.floor((days - Math.round(m * DAYS_PER_MONTH)) / 7);
+    if(w >= 4){ m++; w = 0; }           // avoid nonsense like "1 month 4 weeks"
+    if(m < 12){
+      const words = [plural(m, 'month')];
+      if(w) words.push(plural(w, 'week'));
+      return { big: m + 'mo' + (w ? ' ' + w + 'w' : ''), sub: words.join(' ') + ' alcohol-free' };
+    }
+    // rounded up into a full year — fall through to the year format below
+  }
+  let y = Math.max(1, Math.floor(days / 365));
+  let m = Math.floor(Math.max(0, days - y * 365) / DAYS_PER_MONTH);
+  if(m >= 12){ y++; m = 0; }
+  const words = [plural(y, 'year')];
+  if(m) words.push(plural(m, 'month'));
+  return { big: y + 'y' + (m ? ' ' + m + 'mo' : ''), sub: words.join(' ') + ' alcohol-free' };
+}
+
 function computeStats(){
   const dates = Object.keys(entries).sort();
   let totalZero=0, totalLogged=dates.length;
   dates.forEach(d=>{ if(entries[d].drinks === 0) totalZero++; });
 
-  // current streak: walk backward from today, must have consecutive logged zero days
+  // current streak: walk backward from today, must have consecutive logged zero days.
+  // Today not being logged yet shouldn't break the streak — the day isn't over.
+  // A logged drinking day today does break it.
   let streak = 0;
   let cursor = new Date();
+  if(!entries[fmtDate(cursor)]){
+    cursor.setDate(cursor.getDate()-1);
+  }
   while(true){
     const key = fmtDate(cursor);
     if(entries[key] && entries[key].drinks === 0){
@@ -356,9 +397,13 @@ function computeStats(){
   });
   longest = Math.max(longest, streak);
 
-  document.getElementById('streakNum').textContent = streak;
-  document.getElementById('streakSub').textContent = streak === 1 ? 'day alcohol-free' : 'days alcohol-free';
-  document.getElementById('longestStreak').textContent = longest;
+  const fmt = formatStreak(streak);
+  const numEl = document.getElementById('streakNum');
+  numEl.textContent = fmt.big;
+  // shrink the odometer a step when the compound form is long, so it never overflows
+  numEl.classList.toggle('compact', fmt.big.length > 3);
+  document.getElementById('streakSub').textContent = fmt.sub;
+  document.getElementById('longestStreak').textContent = formatStreak(longest).big;
   document.getElementById('totalZero').textContent = totalZero;
   document.getElementById('totalLogged').textContent = totalLogged;
 

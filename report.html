@@ -49,30 +49,33 @@
   }
 
   header {
-    padding: 22px 18px 14px;
+    padding: 16px 16px 14px;
     border-bottom: 1px solid var(--line);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--chalk); }
+  .nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    padding: 2px 2px 14px;
   }
-  header h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--chalk); }
-  .header-nav { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .back-link {
-    background: var(--iron-red);
-    border: none;
-    color: #0e1417;
+  .nav a {
+    color: var(--chalk-dim);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .nav a:hover { color: var(--chalk); }
+  .nav-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.02em;
-    padding: 9px 14px;
-    text-decoration: none;
-    display: inline-block;
-    flex-shrink: 0;
-    border-radius: 10px;
+    color: var(--chalk-dim);
   }
-  .back-link:active { filter: brightness(1.12); }
 
   main { padding: 16px; max-width: 480px; margin: 0 auto; }
 
@@ -158,11 +161,12 @@
 <body>
 
 <header>
-  <h1>Reports</h1>
-  <div class="header-nav">
-    <a class="back-link" href="index.html">← Iron Log</a>
-    <a class="back-link" href="drinks.html">🍺 Sober Log</a>
+  <div class="nav">
+    <a href="index.html">&larr; Iron Log</a>
+    <span class="nav-title">REPORTS</span>
+    <a href="drinks.html">Sober Log →</a>
   </div>
+  <h1>Reports</h1>
 </header>
 
 <main>
