@@ -111,6 +111,26 @@
   .total-line{display:flex;justify-content:space-between;padding:10px 0;font-size:13px;color:var(--text-dim);border-top:1px solid var(--border);margin-top:4px;}
   .total-line b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:15px;}
 
+  .quick-fill{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 14px;}
+  .quick-fill button{
+    flex:1;min-width:76px;background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text-dim);border-radius:8px;padding:7px 4px;font-family:inherit;
+    font-size:12px;font-weight:500;cursor:pointer;
+  }
+  .quick-fill button:active{border-color:var(--accent);color:var(--accent);}
+
+  .overwrite-row{display:flex;align-items:center;gap:9px;padding:12px 0 4px;cursor:pointer;}
+  .overwrite-row input{width:17px;height:17px;accent-color:var(--accent);flex-shrink:0;}
+  .overwrite-row span{font-size:12px;color:var(--text-dim);}
+
+  .range-preview{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;font-size:12px;line-height:1.6;color:var(--text-dim);margin-top:8px;
+  }
+  .range-preview b{color:var(--text);font-family:'Space Grotesk',sans-serif;}
+  .range-preview.warn{border-color:var(--amber);}
+  .range-preview.err{border-color:var(--red);color:var(--red);}
+
   .btn-row{display:flex;gap:10px;margin-top:14px;}
   .btn{
     flex:1;border:none;border-radius:10px;padding:12px 0;font-family:inherit;
@@ -199,10 +219,41 @@
     <div class="seg">
       <button id="modeSimpleBtn" class="active">Simple</button>
       <button id="modeDetailBtn">Detailed</button>
+      <button id="modeRangeBtn">Range</button>
     </div>
-    <div class="date-row">
+    <div class="date-row" id="singleDateRow">
       <label>Date</label>
       <input type="date" id="entryDate">
+    </div>
+
+    <div id="rangeMode" style="display:none;">
+      <div class="date-row">
+        <label>From</label>
+        <input type="date" id="rangeStart">
+      </div>
+      <div class="date-row">
+        <label>To</label>
+        <input type="date" id="rangeEnd">
+      </div>
+      <div class="quick-fill">
+        <button type="button" data-weeks="4">Last 4 wks</button>
+        <button type="button" data-weeks="12">Last 12 wks</button>
+        <button type="button" data-weeks="18">Last 18 wks</button>
+        <button type="button" data-weeks="26">Last 26 wks</button>
+      </div>
+      <div class="counter-row">
+        <div class="label">Drinks per day</div>
+        <div class="stepper">
+          <button data-step="-1" data-target="rangeCount">−</button>
+          <span class="val" id="rangeCount">0</span>
+          <button data-step="1" data-target="rangeCount">+</button>
+        </div>
+      </div>
+      <label class="overwrite-row">
+        <input type="checkbox" id="rangeOverwrite">
+        <span>Overwrite days I've already logged</span>
+      </label>
+      <div class="range-preview" id="rangePreview">Pick a start and end date.</div>
     </div>
 
     <div id="simpleMode">
@@ -236,9 +287,12 @@
       <div class="total-line"><span>Total standard drinks</span><b id="detailTotal">0</b></div>
     </div>
 
-    <div class="btn-row">
+    <div class="btn-row" id="singleBtnRow">
       <button class="btn btn-secondary" id="logZeroBtn">Log Zero Day</button>
       <button class="btn btn-primary" id="saveEntryBtn">Save Entry</button>
+    </div>
+    <div class="btn-row" id="rangeBtnRow" style="display:none;">
+      <button class="btn btn-primary" id="saveRangeBtn" style="flex:1;">Fill Range</button>
     </div>
   </div>
 
@@ -522,10 +576,17 @@ function refreshCounters(){
 
 function setMode(mode){
   currentMode = mode;
+  const isRange = mode === 'range';
   document.getElementById('modeSimpleBtn').classList.toggle('active', mode==='simple');
   document.getElementById('modeDetailBtn').classList.toggle('active', mode==='detailed');
+  document.getElementById('modeRangeBtn').classList.toggle('active', isRange);
   document.getElementById('simpleMode').style.display = mode==='simple' ? 'block':'none';
   document.getElementById('detailMode').style.display = mode==='detailed' ? 'block':'none';
+  document.getElementById('rangeMode').style.display = isRange ? 'block':'none';
+  document.getElementById('singleDateRow').style.display = isRange ? 'none':'flex';
+  document.getElementById('singleBtnRow').style.display = isRange ? 'none':'flex';
+  document.getElementById('rangeBtnRow').style.display = isRange ? 'flex':'none';
+  if(isRange) updateRangePreview();
 }
 
 function renderTrend(){
@@ -600,6 +661,7 @@ function renderTrend(){
 // --- Event wiring ---
 document.getElementById('modeSimpleBtn').addEventListener('click', ()=>setMode('simple'));
 document.getElementById('modeDetailBtn').addEventListener('click', ()=>setMode('detailed'));
+document.getElementById('modeRangeBtn').addEventListener('click', ()=>setMode('range'));
 
 document.querySelectorAll('.stepper button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -607,6 +669,11 @@ document.querySelectorAll('.stepper button').forEach(btn=>{
     const target = btn.dataset.target;
     if(target === 'simpleCount'){
       simpleCount = Math.max(0, simpleCount + step);
+    } else if(target === 'rangeCount'){
+      rangeCount = Math.max(0, rangeCount + step);
+      document.getElementById('rangeCount').textContent = rangeCount;
+      updateRangePreview();
+      return;
     } else {
       const map = { cBeer:'beer', cWine:'wine', cMixed:'mixed', cShots:'shots' };
       const key = map[target];
@@ -648,6 +715,97 @@ document.getElementById('saveEntryBtn').addEventListener('click', ()=>{
   renderCalendar();
   renderTrend();
   showToast('Entry saved');
+});
+
+// ---- Range fill (backfilling stretches of history) ----
+let rangeCount = 0;
+
+function eachDateInRange(startKey, endKey){
+  const out = [];
+  const cur = parseDate(startKey);
+  const end = parseDate(endKey);
+  while(cur <= end){
+    out.push(fmtDate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+function getRangeInfo(){
+  const startKey = document.getElementById('rangeStart').value;
+  const endKey = document.getElementById('rangeEnd').value;
+  if(!startKey || !endKey) return { error: 'Pick a start and end date.' };
+  if(parseDate(startKey) > parseDate(endKey)) return { error: 'Start date must be on or before the end date.' };
+  const days = eachDateInRange(startKey, endKey);
+  if(days.length > 1000) return { error: 'That range is too long — keep it under about 3 years.' };
+  const existing = days.filter(k => entries[k]);
+  return { startKey, endKey, days, existing };
+}
+
+function updateRangePreview(){
+  const el = document.getElementById('rangePreview');
+  const info = getRangeInfo();
+  el.classList.remove('warn', 'err');
+  if(info.error){
+    el.classList.add('err');
+    el.textContent = info.error;
+    return;
+  }
+  const n = info.days.length;
+  const weeks = Math.floor(n / 7), rem = n % 7;
+  let span = `<b>${n}</b> day${n===1?'':'s'}`;
+  if(weeks) span += ` (${weeks} week${weeks===1?'':'s'}${rem ? ' ' + rem + ' day' + (rem===1?'':'s') : ''})`;
+  const label = rangeCount === 0 ? 'zero-drink day' : rangeCount + '-drink day';
+  let msg = `Will fill ${span} as <b>${label}${n===1?'':'s'}</b>.`;
+  const overwrite = document.getElementById('rangeOverwrite').checked;
+  if(info.existing.length){
+    if(overwrite){
+      el.classList.add('warn');
+      msg += `<br>⚠ <b>${info.existing.length}</b> already-logged day${info.existing.length===1?'':'s'} will be overwritten.`;
+    } else {
+      msg += `<br><b>${info.existing.length}</b> already-logged day${info.existing.length===1?'':'s'} will be skipped.`;
+    }
+  }
+  el.innerHTML = msg;
+}
+
+['rangeStart','rangeEnd','rangeOverwrite'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', updateRangePreview);
+});
+
+// Quick presets fill the range ending yesterday (today is usually still in progress)
+document.querySelectorAll('.quick-fill button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const weeks = parseInt(btn.dataset.weeks, 10);
+    const end = new Date();
+    end.setDate(end.getDate() - 1);
+    const start = new Date(end);
+    start.setDate(start.getDate() - (weeks * 7 - 1));
+    document.getElementById('rangeStart').value = fmtDate(start);
+    document.getElementById('rangeEnd').value = fmtDate(end);
+    updateRangePreview();
+  });
+});
+
+document.getElementById('saveRangeBtn').addEventListener('click', ()=>{
+  const info = getRangeInfo();
+  if(info.error){ showToast(info.error); return; }
+  const overwrite = document.getElementById('rangeOverwrite').checked;
+  if(info.existing.length && overwrite){
+    if(!confirm(`Overwrite ${info.existing.length} already-logged day(s) in this range?`)) return;
+  }
+  let written = 0, skipped = 0;
+  info.days.forEach(key=>{
+    if(entries[key] && !overwrite){ skipped++; return; }
+    entries[key] = { drinks: rangeCount, mode:'simple', detail:null };
+    written++;
+  });
+  save();
+  computeStats();
+  renderCalendar();
+  renderTrend();
+  showToast(`Filled ${written} day${written===1?'':'s'}${skipped ? ` · ${skipped} skipped` : ''} ✓`);
+  updateRangePreview();
 });
 
 document.getElementById('prevMonth').addEventListener('click', ()=>{
