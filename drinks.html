@@ -72,6 +72,22 @@
     padding:16px;
     margin-bottom:16px;
   }
+  .catchup{
+    background:color-mix(in srgb, var(--green) 16%, var(--surface));
+    border:1px solid color-mix(in srgb, var(--green) 45%, var(--border));
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .catchup-text{font-size:14px;line-height:1.5;color:var(--text);margin-bottom:12px;}
+  .catchup-text b{font-family:'Space Grotesk',sans-serif;}
+  .catchup-actions{display:flex;align-items:center;gap:12px;}
+  .catchup-actions .btn{flex:0 0 auto;}
+  .catchup-dismiss{
+    background:none;border:none;color:var(--text-dim);
+    font-family:inherit;font-size:13px;cursor:pointer;padding:8px;
+  }
+  .catchup-dismiss:hover{color:var(--text);}
   .card h2{
     font-family:'Space Grotesk',sans-serif;
     font-size:14px;
@@ -236,6 +252,14 @@
       <div class="stat"><b id="longestStreak">0</b><span>Longest streak</span></div>
       <div class="stat"><b id="totalZero">0</b><span>Zero days logged</span></div>
       <div class="stat"><b id="totalLogged">0</b><span>Days tracked</span></div>
+    </div>
+  </div>
+
+  <div class="catchup" id="catchupBanner" style="display:none;">
+    <div class="catchup-text" id="catchupText"></div>
+    <div class="catchup-actions">
+      <button class="btn btn-primary" id="catchupFill">Mark alcohol-free</button>
+      <button class="catchup-dismiss" id="catchupDismiss">Not now</button>
     </div>
   </div>
 
@@ -958,6 +982,69 @@ document.getElementById('fileInput').addEventListener('change', (e)=>{
 
 window.addEventListener('resize', renderTrend);
 
+// --- Catch-up: offer to fill the gap since the last logged day as alcohol-free ---
+function getLastLoggedDate(){
+  const keys = Object.keys(entries).sort();
+  return keys.length ? keys[keys.length-1] : null;
+}
+
+function getCatchupDays(){
+  const lastKey = getLastLoggedDate();
+  if(!lastKey) return [];
+  // fill strictly between last logged day and yesterday (today is still in progress)
+  const start = parseDate(lastKey);
+  start.setDate(start.getDate()+1);
+  const yesterday = new Date();
+  yesterday.setHours(0,0,0,0);
+  yesterday.setDate(yesterday.getDate()-1);
+  const out = [];
+  const cur = new Date(start);
+  while(cur <= yesterday){
+    const key = fmtDate(cur);
+    if(!entries[key]) out.push(key);
+    cur.setDate(cur.getDate()+1);
+  }
+  return out;
+}
+
+function humanizeCount(n){
+  if(n < 7) return `${n} day${n===1?'':'s'}`;
+  const w = Math.floor(n/7), d = n%7;
+  let s = `${w} week${w===1?'':'s'}`;
+  if(d) s += ` ${d} day${d===1?'':'s'}`;
+  return s;
+}
+
+function renderCatchup(){
+  const banner = document.getElementById('catchupBanner');
+  if(sessionStorage.getItem('catchupDismissed') === '1'){ banner.style.display='none'; return; }
+  const days = getCatchupDays();
+  if(days.length < 1){ banner.style.display='none'; return; }
+  const lastKey = getLastLoggedDate();
+  const lastNice = parseDate(lastKey).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  document.getElementById('catchupText').innerHTML =
+    `It's been a while — <b>${humanizeCount(days.length)}</b> unlogged since ${lastNice}. ` +
+    `If you've been alcohol-free, mark them all as zero-drink days?`;
+  banner.style.display = 'block';
+}
+
+document.getElementById('catchupFill').addEventListener('click', ()=>{
+  const days = getCatchupDays();
+  days.forEach(key=>{ entries[key] = { drinks:0, mode:'simple', detail:null }; });
+  save();
+  computeStats();
+  renderCalendar();
+  renderTrend();
+  renderHeatmap();
+  document.getElementById('catchupBanner').style.display='none';
+  showToast(`Filled ${days.length} day${days.length===1?'':'s'} as alcohol-free ✓`);
+});
+
+document.getElementById('catchupDismiss').addEventListener('click', ()=>{
+  sessionStorage.setItem('catchupDismissed','1');
+  document.getElementById('catchupBanner').style.display='none';
+});
+
 // --- Init ---
 load();
 loadEntryIntoForm(todayStr());
@@ -965,6 +1052,7 @@ computeStats();
 renderCalendar();
 renderTrend();
 renderHeatmap();
+renderCatchup();
 </script>
 </body>
 </html>
