@@ -42,6 +42,18 @@
     min-height: 100vh;
     padding-bottom: 40px;
   }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 90% 55% at 12% 2%, color-mix(in srgb, var(--iron-red) 42%, transparent), transparent 62%),
+      radial-gradient(ellipse 75% 50% at 98% 18%, color-mix(in srgb, var(--plate-blue) 40%, transparent), transparent 58%),
+      radial-gradient(ellipse 85% 55% at 88% 72%, color-mix(in srgb, var(--iron-red) 30%, transparent), transparent 60%),
+      radial-gradient(ellipse 95% 60% at 45% 108%, color-mix(in srgb, var(--ok-green) 32%, transparent), transparent 62%);
+  }
   h1, h2, .display {
     font-family: 'Space Grotesk', sans-serif;
     text-transform: uppercase;
@@ -49,12 +61,11 @@
   }
 
   header {
-    padding: 16px 16px 14px;
-    border-bottom: 1px solid var(--line);
+    padding: 16px 16px 4px;
     max-width: 480px;
     margin: 0 auto;
   }
-  header h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--chalk); }
+  header h1 { margin: 0; font-size: 24px; font-weight: 700; color: var(--chalk); letter-spacing: 0.01em; }
   .nav {
     display: flex;
     align-items: center;
@@ -80,11 +91,41 @@
   main { padding: 16px; max-width: 480px; margin: 0 auto; }
 
   .panel {
+    position: relative;
     background: var(--panel);
+    background: color-mix(in srgb, var(--panel) 48%, transparent);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
     border: 1px solid var(--line);
+    border: 1px solid color-mix(in srgb, var(--chalk) 14%, transparent);
     padding: 16px;
-    margin-bottom: 16px;
-    border-radius: 16px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: -45%;
+    left: 50%;
+    width: 130%;
+    height: 100%;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--iron-red) 34%, transparent), transparent 68%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .panel > * { position: relative; z-index: 1; }
+  .panel:nth-of-type(3n+2)::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--plate-blue) 40%, transparent), transparent 68%);
+  }
+  .panel:nth-of-type(3n)::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--ok-green) 32%, transparent), transparent 68%);
+  }
+  .panel:first-of-type::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--iron-red) 46%, transparent), transparent 70%);
+    height: 115%;
   }
 
   .panel-title {
@@ -95,6 +136,36 @@
     margin: 0 0 14px;
     color: var(--chalk-dim);
   }
+  .panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .panel-title-row .panel-title { margin: 0; }
+  .mini-seg {
+    display: flex;
+    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .mini-seg button {
+    background: transparent;
+    border: none;
+    color: var(--chalk-dim);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 7px;
+  }
+  .mini-seg button.active { background: var(--iron-red); color: #0e1417; }
 
   .field-row { display: flex; gap: 10px; margin-bottom: 12px; }
   .field { flex: 1; }
@@ -138,7 +209,7 @@
   .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .chart-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--chalk-dim); }
   .chart-stat { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); }
-  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; }
+  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 55%, transparent); border-radius: 10px; }
   .chart-substat { font-size: 10px; color: var(--chalk-dim); margin-top: 6px; text-align: right; }
 
   .ledger-day { margin-bottom: 4px; }
@@ -170,6 +241,45 @@
 </header>
 
 <main>
+  <div class="panel">
+    <div class="panel-title-row">
+      <h2 class="panel-title">Weight &amp; Measurements</h2>
+      <div class="mini-seg" id="smoothToggle">
+        <button data-mode="smoothed" class="active">Smoothed</button>
+        <button data-mode="raw">Raw</button>
+      </div>
+    </div>
+    <div class="chart-block" style="border-top:none; padding-top:0; margin-top:0;">
+      <div class="chart-header">
+        <span class="chart-title" id="weightChartTitle">Weight Trend (smoothed)</span>
+        <span class="chart-stat" id="weightStat">—</span>
+      </div>
+      <canvas id="weightChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="weightSubstat">No data yet</div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="chart-title" id="waistChartTitle">Waist Trend (smoothed)</span>
+        <span class="chart-stat" id="waistStat">—</span>
+      </div>
+      <canvas id="waistChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="waistSubstat">No data yet</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Lift Progress</h2>
+    <div class="lift-select-row">
+      <select id="liftSelect"></select>
+    </div>
+    <div class="chart-header">
+      <span class="chart-title" id="liftChartTitle">Estimated 1RM Trend</span>
+      <span class="chart-stat" id="liftStat">—</span>
+    </div>
+    <canvas id="liftChart" class="chart-canvas"></canvas>
+    <div class="chart-substat" id="liftSubstat">No data yet</div>
+  </div>
+
   <div class="panel" id="bodyLogPanel">
     <h2 class="panel-title">Log Body Stats</h2>
     <div class="field-row">
@@ -192,41 +302,8 @@
   </div>
 
   <div class="panel">
-    <h2 class="panel-title">Weight &amp; Measurements</h2>
-    <div class="chart-block" style="border-top:none; padding-top:0; margin-top:0;">
-      <div class="chart-header">
-        <span class="chart-title">Weight Trend (smoothed)</span>
-        <span class="chart-stat" id="weightStat">—</span>
-      </div>
-      <canvas id="weightChart" class="chart-canvas"></canvas>
-      <div class="chart-substat" id="weightSubstat">No data yet</div>
-    </div>
-    <div class="chart-block">
-      <div class="chart-header">
-        <span class="chart-title">Waist Trend (smoothed)</span>
-        <span class="chart-stat" id="waistStat">—</span>
-      </div>
-      <canvas id="waistChart" class="chart-canvas"></canvas>
-      <div class="chart-substat" id="waistSubstat">No data yet</div>
-    </div>
-  </div>
-
-  <div class="panel">
     <h2 class="panel-title">Body Log History</h2>
     <div id="bodyLedger"></div>
-  </div>
-
-  <div class="panel">
-    <h2 class="panel-title">Lift Progress</h2>
-    <div class="lift-select-row">
-      <select id="liftSelect"></select>
-    </div>
-    <div class="chart-header">
-      <span class="chart-title" id="liftChartTitle">Estimated 1RM Trend</span>
-      <span class="chart-stat" id="liftStat">—</span>
-    </div>
-    <canvas id="liftChart" class="chart-canvas"></canvas>
-    <div class="chart-substat" id="liftSubstat">No data yet</div>
   </div>
 </main>
 
@@ -266,6 +343,7 @@ function themeColor(varName, fallback) {
 // ============ BODY LOG (weight / waist, Hacker's Diet smoothing) ============
 const BODY_SMOOTHING_N = 10; // classic Hacker's Diet damping factor (~10-day exponential average)
 let bodyEntries = [];
+let smoothMode = 'smoothed'; // 'smoothed' | 'raw'
 
 function bodySaveLocal() {
   try { localStorage.setItem('ironlog_body_entries', JSON.stringify(bodyEntries)); } catch (e) { console.error('body save failed', e); }
@@ -330,35 +408,52 @@ function renderTrendChart(canvas, series, color) {
   const xFor = i => marginX + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
   const yFor = v => marginY + plotH - ((v - min) / (max - min)) * plotH;
 
-  // raw points (faint)
-  ctx.fillStyle = 'rgba(140,140,140,0.45)';
-  series.forEach((p, i) => {
+  if (smoothMode === 'raw') {
+    // raw dots, connected by a thin line — the actual measurements, noise and all
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(xFor(i), yFor(p.raw), 2, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // smoothed trend line (bold)
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  series.forEach((p, i) => {
-    const x = xFor(i), y = yFor(p.smoothed);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
+    series.forEach((p, i) => {
+      const x = xFor(i), y = yFor(p.raw);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = color;
+    series.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(xFor(i), yFor(p.raw), 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  } else {
+    // faint raw dots for context, bold smoothed trend line on top
+    ctx.fillStyle = 'rgba(140,140,140,0.45)';
+    series.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(xFor(i), yFor(p.raw), 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    series.forEach((p, i) => {
+      const x = xFor(i), y = yFor(p.smoothed);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
 }
 
 function renderBodyStat(statElId, subElId, points, unit) {
   const statEl = document.getElementById(statElId);
   const subEl = document.getElementById(subElId);
   if (!points.length) { statEl.textContent = '—'; subEl.textContent = 'No data yet'; return; }
+  const field = smoothMode === 'raw' ? 'raw' : 'smoothed';
   const latest = points[points.length - 1];
-  statEl.textContent = `${latest.smoothed.toFixed(1)} ${unit}`;
+  statEl.textContent = `${latest[field].toFixed(1)} ${unit}`;
   const cutoff = new Date(latest.timestamp).getTime() - 7 * 24 * 60 * 60 * 1000;
   const past = findClosestAtOrBefore(points, cutoff);
   if (past) {
-    const delta = latest.smoothed - past.smoothed;
+    const delta = latest[field] - past[field];
     const sign = delta > 0 ? '+' : '';
     subEl.textContent = `7-day: ${sign}${delta.toFixed(1)} ${unit} · ~${sign}${delta.toFixed(1)} ${unit}/wk`;
   } else {
@@ -371,6 +466,9 @@ function renderBodyCharts() {
   const waistPoints = computeSmoothedSeries(bodyEntries, 'waist');
   const accent = themeColor('--iron-red', '#c23b22');
   const accent2 = themeColor('--plate-blue', '#5b6470');
+  const suffix = smoothMode === 'raw' ? '(raw)' : '(smoothed)';
+  document.getElementById('weightChartTitle').textContent = `Weight Trend ${suffix}`;
+  document.getElementById('waistChartTitle').textContent = `Waist Trend ${suffix}`;
   renderTrendChart(document.getElementById('weightChart'), weightPoints, accent);
   renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2);
   renderBodyStat('weightStat', 'weightSubstat', weightPoints, 'lb');
@@ -577,6 +675,15 @@ function populateLiftSelect() {
   renderLiftChart(select.value);
 }
 document.getElementById('liftSelect').addEventListener('change', (e) => renderLiftChart(e.target.value));
+
+// Smoothed / raw toggle for the body charts
+document.querySelectorAll('#smoothToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    smoothMode = btn.dataset.mode;
+    document.querySelectorAll('#smoothToggle button').forEach(b => b.classList.toggle('active', b === btn));
+    renderBodyCharts();
+  });
+});
 
 // ============ Init ============
 bodyLoadLocal();
