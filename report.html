@@ -209,7 +209,7 @@
   .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   .chart-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--chalk-dim); }
   .chart-stat { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); }
-  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 55%, transparent); border-radius: 10px; }
+  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 55%, transparent); border-radius: 10px; touch-action: none; }
   .chart-substat { font-size: 10px; color: var(--chalk-dim); margin-top: 6px; text-align: right; }
 
   .ledger-day { margin-bottom: 4px; }
@@ -227,6 +227,29 @@
   .empty { text-align: center; color: var(--chalk-dim); font-size: 12px; padding: 20px 0; }
 
   .lift-select-row { margin-bottom: 14px; }
+
+  .goal-save-btn { background: var(--iron-red); color: #0e1417; margin-bottom: 4px; }
+  .stat-tiles { display: flex; gap: 10px; margin-top: 14px; }
+  .stat-tile {
+    flex: 1;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-tile-val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--chalk);
+    line-height: 1.1;
+  }
+  .stat-tile-lbl { font-size: 10px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+  .bmi-under { color: var(--amber) !important; }
+  .bmi-normal { color: var(--ok-green) !important; }
+  .bmi-over { color: var(--amber) !important; }
+  .bmi-obese { color: var(--red) !important; }
 </style>
 </head>
 <body>
@@ -241,6 +264,62 @@
 </header>
 
 <main>
+  <div class="panel" id="bodyLogPanel">
+    <h2 class="panel-title">Log Body Stats</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodyWeight">Weight (lb)</label>
+        <input type="number" id="bodyWeight" inputmode="decimal" placeholder="185.0" step="0.1">
+      </div>
+      <div class="field">
+        <label for="bodyWaist">Waist (in)</label>
+        <input type="number" id="bodyWaist" inputmode="decimal" placeholder="34.0" step="0.1">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodySys">BP Systolic</label>
+        <input type="number" id="bodySys" inputmode="numeric" placeholder="120">
+      </div>
+      <div class="field">
+        <label for="bodyDia">BP Diastolic</label>
+        <input type="number" id="bodyDia" inputmode="numeric" placeholder="80">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodyWhen">Date</label>
+        <input type="datetime-local" id="bodyWhen">
+      </div>
+    </div>
+    <button class="log-btn" id="bodyLogBtn">Log Body Stats</button>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Goal &amp; BMI</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="goalWeight">Goal weight (lb)</label>
+        <input type="number" id="goalWeight" inputmode="decimal" placeholder="175.0" step="0.1">
+      </div>
+      <div class="field">
+        <label for="heightIn">Height (in)</label>
+        <input type="number" id="heightIn" inputmode="decimal" placeholder="70" step="0.5">
+      </div>
+    </div>
+    <button class="log-btn goal-save-btn" id="goalSaveBtn">Save Goal &amp; Height</button>
+    <div class="stat-tiles">
+      <div class="stat-tile">
+        <div class="stat-tile-val" id="goalDeltaVal">—</div>
+        <div class="stat-tile-lbl" id="goalDeltaLbl">to goal</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-val" id="bmiVal">—</div>
+        <div class="stat-tile-lbl" id="bmiLbl">BMI</div>
+      </div>
+    </div>
+  </div>
+
   <div class="panel">
     <div class="panel-title-row">
       <h2 class="panel-title">Weight &amp; Measurements</h2>
@@ -265,6 +344,14 @@
       <canvas id="waistChart" class="chart-canvas"></canvas>
       <div class="chart-substat" id="waistSubstat">No data yet</div>
     </div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="chart-title">Blood Pressure</span>
+        <span class="chart-stat" id="bpStat">—</span>
+      </div>
+      <canvas id="bpChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="bpSubstat">No data yet</div>
+    </div>
   </div>
 
   <div class="panel">
@@ -278,27 +365,6 @@
     </div>
     <canvas id="liftChart" class="chart-canvas"></canvas>
     <div class="chart-substat" id="liftSubstat">No data yet</div>
-  </div>
-
-  <div class="panel" id="bodyLogPanel">
-    <h2 class="panel-title">Log Body Stats</h2>
-    <div class="field-row">
-      <div class="field">
-        <label for="bodyWeight">Weight (lb)</label>
-        <input type="number" id="bodyWeight" inputmode="decimal" placeholder="185.0" step="0.1">
-      </div>
-      <div class="field">
-        <label for="bodyWaist">Waist (in)</label>
-        <input type="number" id="bodyWaist" inputmode="decimal" placeholder="34.0" step="0.1">
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label for="bodyWhen">Date</label>
-        <input type="datetime-local" id="bodyWhen">
-      </div>
-    </div>
-    <button class="log-btn" id="bodyLogBtn">Log Body Stats</button>
   </div>
 
   <div class="panel">
@@ -344,6 +410,17 @@ function themeColor(varName, fallback) {
 const BODY_SMOOTHING_N = 10; // classic Hacker's Diet damping factor (~10-day exponential average)
 let bodyEntries = [];
 let smoothMode = 'smoothed'; // 'smoothed' | 'raw'
+let goalWeight = null;
+let heightIn = null;
+
+function loadGoalHeight() {
+  const g = parseFloat(localStorage.getItem('ironlog_goal_weight'));
+  const h = parseFloat(localStorage.getItem('ironlog_height_in'));
+  goalWeight = isNaN(g) ? null : g;
+  heightIn = isNaN(h) ? null : h;
+  if (goalWeight !== null) document.getElementById('goalWeight').value = goalWeight;
+  if (heightIn !== null) document.getElementById('heightIn').value = heightIn;
+}
 
 function bodySaveLocal() {
   try { localStorage.setItem('ironlog_body_entries', JSON.stringify(bodyEntries)); } catch (e) { console.error('body save failed', e); }
@@ -354,6 +431,79 @@ function bodyLoadLocal() {
     if (raw) bodyEntries = JSON.parse(raw);
   } catch (e) { bodyEntries = []; }
 }
+
+// color for a weight value by proximity to goal: at goal = green, at/beyond the
+// starting distance = red, interpolated in between. Returns an rgb() string.
+function goalColor(value, startDist) {
+  if (goalWeight === null || !startDist) return themeColor('--iron-red', '#4fb6c9');
+  const dist = Math.abs(value - goalWeight);
+  const t = Math.max(0, Math.min(1, dist / startDist)); // 0 at goal, 1 at/over start distance
+  // green (63,143,98) -> amber (224,164,82) -> red (192,72,63)
+  const green = [63,143,98], amber = [224,164,82], red = [192,72,63];
+  let c;
+  if (t < 0.5) { const k = t/0.5; c = green.map((g,i)=>Math.round(g+(amber[i]-g)*k)); }
+  else { const k = (t-0.5)/0.5; c = amber.map((a,i)=>Math.round(a+(red[i]-a)*k)); }
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function getBmiInfo(weight) {
+  if (!heightIn || !weight) return null;
+  const bmi = 703 * weight / (heightIn * heightIn);
+  let cat, cls;
+  if (bmi < 18.5) { cat = 'Underweight'; cls = 'bmi-under'; }
+  else if (bmi < 25) { cat = 'Normal'; cls = 'bmi-normal'; }
+  else if (bmi < 30) { cat = 'Overweight'; cls = 'bmi-over'; }
+  else { cat = 'Obese'; cls = 'bmi-obese'; }
+  return { bmi, cat, cls };
+}
+
+function latestWeight() {
+  const ws = bodyEntries.filter(e => typeof e.weight === 'number').sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  return ws.length ? ws[ws.length-1].weight : null;
+}
+
+function renderGoalBmi() {
+  const w = latestWeight();
+  const deltaVal = document.getElementById('goalDeltaVal');
+  const deltaLbl = document.getElementById('goalDeltaLbl');
+  if (goalWeight !== null && w !== null) {
+    const diff = w - goalWeight;
+    if (Math.abs(diff) < 0.05) { deltaVal.textContent = '🎯'; deltaLbl.textContent = 'goal reached'; }
+    else { deltaVal.textContent = `${diff > 0 ? '' : '+'}${(-diff).toFixed(1)}`; deltaLbl.textContent = `lb to goal (${goalWeight})`; }
+  } else {
+    deltaVal.textContent = '—';
+    deltaLbl.textContent = goalWeight === null ? 'set a goal' : 'log a weight';
+  }
+  const bmiVal = document.getElementById('bmiVal');
+  const bmiLbl = document.getElementById('bmiLbl');
+  bmiVal.className = 'stat-tile-val';
+  const info = getBmiInfo(w);
+  if (info) {
+    bmiVal.textContent = info.bmi.toFixed(1);
+    bmiVal.classList.add(info.cls);
+    bmiLbl.textContent = `BMI · ${info.cat}`;
+  } else {
+    bmiVal.textContent = '—';
+    bmiLbl.textContent = heightIn === null ? 'set height' : 'log a weight';
+  }
+}
+
+document.getElementById('goalSaveBtn').addEventListener('click', () => {
+  const g = parseFloat(document.getElementById('goalWeight').value);
+  const h = parseFloat(document.getElementById('heightIn').value);
+  goalWeight = isNaN(g) ? null : g;
+  heightIn = isNaN(h) ? null : h;
+  try {
+    if (goalWeight !== null) localStorage.setItem('ironlog_goal_weight', goalWeight); else localStorage.removeItem('ironlog_goal_weight');
+    if (heightIn !== null) localStorage.setItem('ironlog_height_in', heightIn); else localStorage.removeItem('ironlog_height_in');
+  } catch (e) {}
+  renderGoalBmi();
+  renderBodyCharts();
+  const btn = document.getElementById('goalSaveBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = orig, 1400);
+});
 
 // Hacker's Diet exponential smoothing: smoothed[i] = smoothed[i-1] + (raw[i] - smoothed[i-1]) / N
 // Seeds with the first raw value, then damps day-to-day noise (water weight, etc.) toward the true trend.
@@ -376,71 +526,196 @@ function findClosestAtOrBefore(points, cutoffMs) {
   return candidate;
 }
 
-function renderTrendChart(canvas, series, color) {
+function fmtShortDate(ts) {
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Shared scrub interaction: attach once per canvas. Uses canvas._scrub (set at render).
+function attachScrub(canvas) {
+  if (canvas._scrubAttached) return;
+  canvas._scrubAttached = true;
+  const handle = (clientX) => {
+    const s = canvas._scrub;
+    if (!s || !s.points.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    let best = 0, bestD = Infinity;
+    s.points.forEach((p, i) => { const d = Math.abs(p.x - x); if (d < bestD) { bestD = d; best = i; } });
+    s.redrawBase();
+    drawScrubOverlay(canvas, best);
+  };
+  const clear = () => { const s = canvas._scrub; if (s) s.redrawBase(); };
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); handle(e.clientX); });
+  canvas.addEventListener('pointermove', e => { if (e.buttons || e.pressure > 0) handle(e.clientX); });
+  canvas.addEventListener('pointerup', clear);
+  canvas.addEventListener('pointercancel', clear);
+  canvas.addEventListener('pointerleave', e => { if (!e.buttons) clear(); });
+}
+
+function drawScrubOverlay(canvas, idx) {
+  const s = canvas._scrub;
+  const p = s.points[idx];
+  const ctx = canvas.getContext('2d');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  // crosshair
+  ctx.save();
+  ctx.strokeStyle = themeColor('--chalk-dim', '#8c8f94');
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(p.x, s.plotTop); ctx.lineTo(p.x, s.plotBottom); ctx.stroke();
+  ctx.restore();
+  // marker
+  ctx.fillStyle = p.color || themeColor('--iron-red', '#4fb6c9');
+  ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = themeColor('--panel', '#232830'); ctx.lineWidth = 1.5; ctx.stroke();
+  // tooltip
+  const label = p.label;
+  ctx.font = '11px Inter, system-ui, sans-serif';
+  const tw = ctx.measureText(label).width;
+  const padX = 7, padY = 5, boxW = tw + padX * 2, boxH = 22;
+  let bx = p.x - boxW / 2;
+  bx = Math.max(2, Math.min(w - boxW - 2, bx));
+  let by = p.y - boxH - 8;
+  if (by < 2) by = p.y + 8;
+  ctx.fillStyle = themeColor('--chalk', '#ecebe6');
+  ctx.globalAlpha = 1;
+  roundRect(ctx, bx, by, boxW, boxH, 6); ctx.fill();
+  ctx.fillStyle = themeColor('--bg', '#1a1d23');
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, bx + padX, by + boxH / 2);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function renderTrendChart(canvas, series, color, opts) {
+  opts = opts || {};
+  const fmt = opts.fmt || (v => v.toFixed(1));
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth || 300;
   const cssHeight = canvas.clientHeight || 130;
   canvas.width = cssWidth * dpr;
   canvas.height = cssHeight * dpr;
   const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, cssWidth, cssHeight);
 
-  if (!series.length) {
+  const drawEmpty = () => {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
     ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
     ctx.font = '11px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('No data yet', cssWidth / 2, cssHeight / 2);
-    return;
-  }
+  };
+  if (!series.length) { canvas._scrub = { points: [], redrawBase: drawEmpty }; drawEmpty(); return; }
 
+  const drawField = (smoothMode === 'raw') ? 'raw' : 'smoothed';
   const rawVals = series.map(p => p.raw);
   const smoothVals = series.map(p => p.smoothed);
   let min = Math.min(...rawVals, ...smoothVals);
   let max = Math.max(...rawVals, ...smoothVals);
+  if (opts.goalLine != null) { min = Math.min(min, opts.goalLine); max = Math.max(max, opts.goalLine); }
   if (min === max) { min -= 1; max += 1; }
   const pad = (max - min) * 0.15;
   min -= pad; max += pad;
 
-  const marginX = 6, marginY = 10;
-  const plotW = cssWidth - marginX * 2;
-  const plotH = cssHeight - marginY * 2;
-  const xFor = i => marginX + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
-  const yFor = v => marginY + plotH - ((v - min) / (max - min)) * plotH;
+  const marginL = 38, marginR = 10, marginT = 12, marginB = 20;
+  const plotW = cssWidth - marginL - marginR;
+  const plotH = cssHeight - marginT - marginB;
+  const xFor = i => marginL + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
+  const yFor = v => marginT + plotH - ((v - min) / (max - min)) * plotH;
 
-  if (smoothMode === 'raw') {
-    // raw dots, connected by a thin line — the actual measurements, noise and all
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    series.forEach((p, i) => {
-      const x = xFor(i), y = yFor(p.raw);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  const drawBase = () => {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    // Y gridlines + value labels (min, mid, max)
+    ctx.font = '9px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    [min, (min + max) / 2, max].forEach(v => {
+      const y = yFor(v);
+      ctx.strokeStyle = themeColor('--line', '#363d48');
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(cssWidth - marginR, y); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.fillText(fmt(v), marginL - 5, y);
     });
-    ctx.stroke();
-    ctx.fillStyle = color;
-    series.forEach((p, i) => {
+    ctx.textBaseline = 'alphabetic';
+
+    // X date labels (first & last)
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.textAlign = 'left';
+    ctx.fillText(fmtShortDate(series[0].timestamp), marginL, cssHeight - 6);
+    if (series.length > 1) {
+      ctx.textAlign = 'right';
+      ctx.fillText(fmtShortDate(series[series.length - 1].timestamp), cssWidth - marginR, cssHeight - 6);
+    }
+
+    // goal line
+    if (opts.goalLine != null) {
+      ctx.save();
+      ctx.strokeStyle = themeColor('--ok-green', '#3f8f62');
+      ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(marginL, yFor(opts.goalLine)); ctx.lineTo(cssWidth - marginR, yFor(opts.goalLine)); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = themeColor('--ok-green', '#3f8f62');
+      ctx.textAlign = 'left';
+      ctx.fillText('goal ' + fmt(opts.goalLine), marginL + 2, yFor(opts.goalLine) - 3);
+    }
+
+    // faint raw dots (smoothed mode)
+    if (smoothMode !== 'raw') {
+      ctx.fillStyle = 'rgba(140,140,140,0.45)';
+      series.forEach((p, i) => { ctx.beginPath(); ctx.arc(xFor(i), yFor(p.raw), 2, 0, Math.PI * 2); ctx.fill(); });
+    }
+
+    // line
+    ctx.lineWidth = smoothMode === 'raw' ? 1.5 : 2;
+    if (opts.colorByGoal && opts.startDist) {
+      for (let i = 1; i < series.length; i++) {
+        const midVal = (series[i-1][drawField] + series[i][drawField]) / 2;
+        ctx.strokeStyle = goalColor(midVal, opts.startDist);
+        ctx.beginPath(); ctx.moveTo(xFor(i-1), yFor(series[i-1][drawField])); ctx.lineTo(xFor(i), yFor(series[i][drawField])); ctx.stroke();
+      }
+      if (series.length === 1) { ctx.fillStyle = goalColor(series[0][drawField], opts.startDist); ctx.beginPath(); ctx.arc(xFor(0), yFor(series[0][drawField]), 3, 0, Math.PI*2); ctx.fill(); }
+    } else {
+      ctx.strokeStyle = color;
       ctx.beginPath();
-      ctx.arc(xFor(i), yFor(p.raw), 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  } else {
-    // faint raw dots for context, bold smoothed trend line on top
-    ctx.fillStyle = 'rgba(140,140,140,0.45)';
-    series.forEach((p, i) => {
-      ctx.beginPath();
-      ctx.arc(xFor(i), yFor(p.raw), 2, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    series.forEach((p, i) => {
-      const x = xFor(i), y = yFor(p.smoothed);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }
+      series.forEach((p, i) => { const x = xFor(i), y = yFor(p[drawField]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+      ctx.stroke();
+    }
+
+    if (smoothMode === 'raw') {
+      series.forEach((p, i) => {
+        ctx.fillStyle = (opts.colorByGoal && opts.startDist) ? goalColor(p.raw, opts.startDist) : color;
+        ctx.beginPath(); ctx.arc(xFor(i), yFor(p.raw), 2.5, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  };
+
+  drawBase();
+
+  // store scrub hit-test data
+  canvas._scrub = {
+    plotTop: marginT, plotBottom: marginT + plotH,
+    redrawBase: drawBase,
+    points: series.map((p, i) => ({
+      x: xFor(i), y: yFor(p[drawField]),
+      color: (opts.colorByGoal && opts.startDist) ? goalColor(p[drawField], opts.startDist) : color,
+      label: `${fmt(p[drawField])} · ${fmtShortDate(p.timestamp)}`
+    }))
+  };
+  attachScrub(canvas);
 }
 
 function renderBodyStat(statElId, subElId, points, unit) {
@@ -469,10 +744,110 @@ function renderBodyCharts() {
   const suffix = smoothMode === 'raw' ? '(raw)' : '(smoothed)';
   document.getElementById('weightChartTitle').textContent = `Weight Trend ${suffix}`;
   document.getElementById('waistChartTitle').textContent = `Waist Trend ${suffix}`;
-  renderTrendChart(document.getElementById('weightChart'), weightPoints, accent);
-  renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2);
+
+  // goal coloring reference: distance from goal at the very first logged weight
+  let weightOpts = { fmt: v => v.toFixed(1) + ' lb' };
+  if (goalWeight !== null && weightPoints.length) {
+    const field = smoothMode === 'raw' ? 'raw' : 'smoothed';
+    const startDist = Math.abs(weightPoints[0][field] - goalWeight) || 1;
+    weightOpts = Object.assign(weightOpts, { goalLine: goalWeight, colorByGoal: true, startDist });
+  }
+  renderTrendChart(document.getElementById('weightChart'), weightPoints, accent, weightOpts);
+  renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2, { fmt: v => v.toFixed(1) + ' in' });
   renderBodyStat('weightStat', 'weightSubstat', weightPoints, 'lb');
   renderBodyStat('waistStat', 'waistSubstat', waistPoints, 'in');
+  renderBpChart();
+}
+
+// Blood pressure: two lines (systolic + diastolic), no smoothing, plus category on latest
+function renderBpChart() {
+  const canvas = document.getElementById('bpChart');
+  const statEl = document.getElementById('bpStat');
+  const subEl = document.getElementById('bpSubstat');
+  const pts = bodyEntries
+    .filter(e => typeof e.sys === 'number' && typeof e.dia === 'number')
+    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 300, cssH = canvas.clientHeight || 130;
+  canvas.width = cssW*dpr; canvas.height = cssH*dpr;
+  const ctx = canvas.getContext('2d');
+
+  if (!pts.length) {
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', cssW/2, cssH/2);
+    statEl.textContent = '—'; subEl.textContent = 'No data yet';
+    canvas._scrub = { points: [], redrawBase: () => {} };
+    return;
+  }
+
+  const sys = pts.map(p=>p.sys), dia = pts.map(p=>p.dia);
+  let min = Math.min(...dia) - 8, max = Math.max(...sys) + 8;
+  const marginL = 34, marginR = 10, marginT = 12, marginB = 20;
+  const pW = cssW - marginL - marginR, pH = cssH - marginT - marginB;
+  const xFor = i => marginL + (pts.length===1 ? pW/2 : (i/(pts.length-1))*pW);
+  const yFor = v => marginT + pH - ((v-min)/(max-min))*pH;
+  const sysCol = themeColor('--iron-red', '#c23b22');
+  const diaCol = themeColor('--plate-blue', '#5b6470');
+
+  const drawBase = () => {
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+    // Y labels
+    ctx.font = '9px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [min, (min+max)/2, max].forEach(v => {
+      const y = yFor(v);
+      ctx.strokeStyle = themeColor('--line', '#363d48'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(cssW - marginR, y); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.fillText(Math.round(v), marginL - 5, y);
+    });
+    ctx.textBaseline = 'alphabetic';
+    // X date labels
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.textAlign = 'left'; ctx.fillText(fmtShortDate(pts[0].timestamp), marginL, cssH - 6);
+    if (pts.length > 1) { ctx.textAlign = 'right'; ctx.fillText(fmtShortDate(pts[pts.length-1].timestamp), cssW - marginR, cssH - 6); }
+    // lines
+    const drawLine = (arr, col) => {
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
+      arr.forEach((v,i)=>{ const x=xFor(i),y=yFor(v); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+      ctx.stroke();
+      ctx.fillStyle = col;
+      arr.forEach((v,i)=>{ ctx.beginPath(); ctx.arc(xFor(i),yFor(v),2.5,0,Math.PI*2); ctx.fill(); });
+    };
+    drawLine(sys, sysCol);
+    drawLine(dia, diaCol);
+  };
+  drawBase();
+
+  const last = pts[pts.length-1];
+  statEl.textContent = `${last.sys}/${last.dia}`;
+  subEl.textContent = `Latest · ${bpCategory(last.sys, last.dia)} · sys (accent) / dia (blue)`;
+
+  // scrub: nearest point shows sys/dia + date; marker sits on the systolic line
+  canvas._scrub = {
+    plotTop: marginT, plotBottom: marginT + pH,
+    redrawBase: drawBase,
+    points: pts.map((p, i) => ({
+      x: xFor(i), y: yFor(p.sys), color: sysCol,
+      label: `${p.sys}/${p.dia} · ${fmtShortDate(p.timestamp)}`
+    }))
+  };
+  attachScrub(canvas);
+}
+
+function bpCategory(sys, dia) {
+  if (sys >= 180 || dia >= 120) return 'Hypertensive crisis';
+  if (sys >= 140 || dia >= 90) return 'Stage 2 high';
+  if (sys >= 130 || dia >= 80) return 'Stage 1 high';
+  if (sys >= 120) return 'Elevated';
+  return 'Normal';
 }
 
 function renderBodyLedger() {
@@ -502,6 +877,7 @@ function renderBodyLedger() {
       const parts = [];
       if (typeof e.weight === 'number') parts.push(`${e.weight} lb`);
       if (typeof e.waist === 'number') parts.push(`${e.waist} in`);
+      if (typeof e.sys === 'number' && typeof e.dia === 'number') parts.push(`${e.sys}/${e.dia} bp`);
       row.innerHTML = `
         <span class="name">Body</span>
         <span class="load">${parts.join(' · ')}<span class="time">${fmtTime(e.timestamp)}</span></span>
@@ -516,6 +892,7 @@ function renderBodyLedger() {
       bodyEntries = bodyEntries.filter(e => e.id !== btn.dataset.id);
       renderBodyLedger();
       renderBodyCharts();
+      renderGoalBmi();
       bodySaveLocal();
     });
   });
@@ -525,20 +902,28 @@ document.getElementById('bodyWhen').value = nowLocalISO();
 document.getElementById('bodyLogBtn').addEventListener('click', () => {
   const weightVal = parseFloat(document.getElementById('bodyWeight').value);
   const waistVal = parseFloat(document.getElementById('bodyWaist').value);
+  const sysVal = parseInt(document.getElementById('bodySys').value, 10);
+  const diaVal = parseInt(document.getElementById('bodyDia').value, 10);
   const when = document.getElementById('bodyWhen').value;
-  if ((!weightVal && !waistVal) || !when) {
-    alert('Enter a weight and/or waist measurement, plus a date/time.');
+  const hasBP = sysVal && diaVal;
+  if ((!weightVal && !waistVal && !hasBP) || !when) {
+    alert('Enter at least one measurement (weight, waist, or blood pressure), plus a date/time.');
+    return;
+  }
+  if ((sysVal && !diaVal) || (diaVal && !sysVal)) {
+    alert('Blood pressure needs both systolic and diastolic values.');
     return;
   }
   const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), timestamp: new Date(when).toISOString() };
   if (weightVal) entry.weight = weightVal;
   if (waistVal) entry.waist = waistVal;
+  if (hasBP) { entry.sys = sysVal; entry.dia = diaVal; }
   bodyEntries.push(entry);
   bodySaveLocal();
   renderBodyLedger();
   renderBodyCharts();
-  document.getElementById('bodyWeight').value = '';
-  document.getElementById('bodyWaist').value = '';
+  renderGoalBmi();
+  ['bodyWeight','bodyWaist','bodySys','bodyDia'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('bodyWhen').value = nowLocalISO();
 });
 
@@ -623,7 +1008,7 @@ function renderLiftChart(liftName) {
   document.getElementById('liftChartTitle').textContent = labels.title;
   const series = points.map(p => ({ timestamp: p.timestamp, raw: p.value, smoothed: p.value }));
   const accent = themeColor('--iron-red', '#c23b22');
-  renderTrendChart(document.getElementById('liftChart'), series, accent);
+  renderTrendChart(document.getElementById('liftChart'), series, accent, { fmt: labels.fmt });
 
   const statEl = document.getElementById('liftStat');
   const subEl = document.getElementById('liftSubstat');
@@ -687,8 +1072,10 @@ document.querySelectorAll('#smoothToggle button').forEach(btn => {
 
 // ============ Init ============
 bodyLoadLocal();
+loadGoalHeight();
 renderBodyLedger();
 renderBodyCharts();
+renderGoalBmi();
 loadLiftEntries();
 populateLiftSelect();
 
