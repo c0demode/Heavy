@@ -23,6 +23,14 @@
     --accent:#4fb6c9;
     --accent-dim:#2b4045;
     --gray:#3a4048;
+    /* 7-step drink scale: 0 drinks (green) → 6+ (dark dark red) */
+    --d0:#43a06a;
+    --d1:#8bb84f;
+    --d2:#d4bb45;
+    --d3:#e0953f;
+    --d4:#d3673a;
+    --d5:#b23f35;
+    --d6:#6d1d1a;
   }
   *{box-sizing:border-box;}
   body{
@@ -159,9 +167,13 @@
   .hm-cell{
     width:13px;height:13px;border-radius:3px;background:var(--surface-2);
   }
-  .hm-cell.zero{background:var(--green);}
-  .hm-cell.light{background:var(--amber);}
-  .hm-cell.heavy{background:var(--red);}
+  .hm-cell.d0{background:var(--d0);}
+  .hm-cell.d1{background:var(--d1);}
+  .hm-cell.d2{background:var(--d2);}
+  .hm-cell.d3{background:var(--d3);}
+  .hm-cell.d4{background:var(--d4);}
+  .hm-cell.d5{background:var(--d5);}
+  .hm-cell.d6{background:var(--d6);}
   .hm-cell.future{background:transparent;}
   .hm-cell.today{outline:2px solid var(--text);outline-offset:1px;}
   .hm-month-row{
@@ -198,15 +210,19 @@
     background:var(--surface-2);color:var(--text-dim);
     border:1px solid transparent;
   }
-  .cal-day.zero .day-bead{border-radius:50%;background:var(--green);color:#f2fbf6;}
-  .cal-day.mod .day-bead{background:var(--amber);color:#241a08;}
-  .cal-day.heavy .day-bead{background:var(--red);color:#fbeceb;}
+  .cal-day.d0 .day-bead{border-radius:50%;background:var(--d0);color:#f2fbf6;}
+  .cal-day.d1 .day-bead{background:var(--d1);color:#1c2410;}
+  .cal-day.d2 .day-bead{background:var(--d2);color:#241a08;}
+  .cal-day.d3 .day-bead{background:var(--d3);color:#241a08;}
+  .cal-day.d4 .day-bead{background:var(--d4);color:#fbeceb;}
+  .cal-day.d5 .day-bead{background:var(--d5);color:#fbeceb;}
+  .cal-day.d6 .day-bead{background:var(--d6);color:#fbeceb;}
   .cal-day.today .day-bead{border-color:var(--accent);}
   .cal-day.selected .day-bead{outline:2px solid var(--text);outline-offset:2px;}
   .bead-neck{
     position:absolute;
     height:9px;
-    background:var(--green);
+    background:var(--d0);
     border-radius:5px;
     z-index:1;
     pointer-events:none;
@@ -215,6 +231,16 @@
   .cal-day.outside{opacity:0.42;}
   .legend{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;}
   .legend .dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+  .scale-legend{
+    display:flex;align-items:center;gap:0;margin-top:12px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;
+  }
+  .scale-legend .scale-end{margin:0 6px;}
+  .scale-key{width:20px;height:12px;display:inline-block;}
+  .scale-key:first-of-type{border-radius:3px 0 0 3px;}
+  .scale-legend .scale-sep{display:inline-flex;align-items:center;gap:5px;margin-left:14px;}
+  .scale-legend .scale-sep .scale-key{border-radius:3px;width:12px;}
+  .heatmap-legend .hm-key:not(:first-of-type){border-radius:0;}
+  .heatmap-legend .hm-key:first-of-type{border-radius:3px 0 0 3px;}
 
   .range-seg{display:flex;gap:6px;margin-bottom:12px;}
   .range-seg button{
@@ -353,26 +379,35 @@
       <button id="nextMonth">›</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-    <div class="legend">
-      <span><span class="dot" style="background:var(--green)"></span>Zero</span>
-      <span><span class="dot" style="background:var(--amber)"></span>1–2 drinks</span>
-      <span><span class="dot" style="background:var(--red)"></span>3+ drinks</span>
-      <span><span class="dot" style="background:var(--surface-2)"></span>Not logged</span>
+    <div class="scale-legend">
+      <span class="scale-end">0</span>
+      <span class="scale-key" style="background:var(--d0)"></span>
+      <span class="scale-key" style="background:var(--d1)"></span>
+      <span class="scale-key" style="background:var(--d2)"></span>
+      <span class="scale-key" style="background:var(--d3)"></span>
+      <span class="scale-key" style="background:var(--d4)"></span>
+      <span class="scale-key" style="background:var(--d5)"></span>
+      <span class="scale-key" style="background:var(--d6)"></span>
+      <span class="scale-end">6+ drinks</span>
+      <span class="scale-sep"><span class="scale-key" style="background:var(--surface-2)"></span>none</span>
     </div>
   </div>
 
   <div class="card">
     <h2>Year Heatmap</h2>
-    <div class="heatmap-scroll">
+    <div class="heatmap-scroll" id="heatmapScroll">
       <div class="heatmap" id="heatmap"></div>
     </div>
-    <div class="legend heatmap-legend">
-      <span>Less</span>
-      <span class="hm-key" style="background:var(--surface-2)"></span>
-      <span class="hm-key" style="background:var(--green)"></span>
-      <span class="hm-key" style="background:var(--amber)"></span>
-      <span class="hm-key" style="background:var(--red)"></span>
-      <span>More drinks</span>
+    <div class="scale-legend heatmap-legend">
+      <span class="scale-end">0</span>
+      <span class="hm-key" style="background:var(--d0)"></span>
+      <span class="hm-key" style="background:var(--d1)"></span>
+      <span class="hm-key" style="background:var(--d2)"></span>
+      <span class="hm-key" style="background:var(--d3)"></span>
+      <span class="hm-key" style="background:var(--d4)"></span>
+      <span class="hm-key" style="background:var(--d5)"></span>
+      <span class="hm-key" style="background:var(--d6)"></span>
+      <span class="scale-end">6+</span>
     </div>
   </div>
 
@@ -433,9 +468,8 @@ function showToast(msg){
 }
 
 function dayColorClass(drinks){
-  if(drinks === 0) return 'zero';
-  if(drinks <= 2) return 'mod';
-  return 'heavy';
+  // 0 → d0 (green), 1..5 → d1..d5, 6 or more → d6 (dark dark red)
+  return 'd' + Math.max(0, Math.min(6, drinks));
 }
 
 // Progressive granularity: days → weeks+days → months+weeks → years+months.
@@ -694,8 +728,9 @@ function renderHeatmap(){
     container.appendChild(cell);
     cur.setDate(cur.getDate() + 1);
   }
-  // map dayColorClass 'mod' -> 'light' class used by heatmap
-  container.querySelectorAll('.hm-cell.mod').forEach(c=>{ c.classList.remove('mod'); c.classList.add('light'); });
+  // land on the most recent weeks (today) rather than a year ago
+  const scroller = document.getElementById('heatmapScroll');
+  if(scroller) scroller.scrollLeft = scroller.scrollWidth;
 }
 
 function renderTrend(){
