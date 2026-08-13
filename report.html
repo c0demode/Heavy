@@ -144,6 +144,31 @@
     margin-bottom: 14px;
   }
   .panel-title-row .panel-title { margin: 0; }
+  .history-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .history-chevron {
+    color: var(--chalk-dim);
+    font-size: 14px;
+    transition: transform 0.15s ease;
+  }
+  .history-toggle[aria-expanded="true"] .history-chevron { transform: rotate(90deg); }
+  .ledger-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 12px;
+    -webkit-overflow-scrolling: touch;
+    border-top: 1px solid var(--line);
+  }
   .chart-controls {
     display: flex;
     align-items: center;
@@ -407,8 +432,13 @@
   </div>
 
   <div class="panel">
-    <h2 class="panel-title">Body Log History</h2>
-    <div id="bodyLedger"></div>
+    <button class="panel-title-row history-toggle" id="historyToggle" aria-expanded="false">
+      <h2 class="panel-title">Body Log History</h2>
+      <span class="history-chevron" id="historyChevron">▸</span>
+    </button>
+    <div class="ledger-scroll" id="ledgerScroll" style="display:none;">
+      <div id="bodyLedger"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -465,15 +495,24 @@ let showGoalLine = false;    // goal line off by default so the data isn't flatt
 let goalWeight = null;
 let heightIn = null;
 
-// Keep only the series points within the selected time window (by most recent point).
-// Smoothing is computed on the FULL history first, then we slice — so the trend line
-// entering the window is already "warmed up" rather than re-seeding mid-stream.
-function sliceToRange(points) {
-  if (chartRange === 'all' || !points.length) return points;
+// A single shared time window across ALL body metrics, so weight/waist/BP charts
+// line up on the same calendar axis. endMs = the most recent point across any metric.
+function getSharedWindow() {
+  const ts = bodyEntries
+    .filter(e => typeof e.weight === 'number' || typeof e.waist === 'number' || (typeof e.sys === 'number' && typeof e.dia === 'number'))
+    .map(e => new Date(e.timestamp).getTime());
+  if (!ts.length) return null;
+  const endMs = Math.max(...ts);
+  if (chartRange === 'all') return { startMs: Math.min(...ts), endMs };
   const days = parseInt(chartRange, 10);
-  const latest = new Date(points[points.length - 1].timestamp).getTime();
-  const cutoff = latest - days * 24 * 60 * 60 * 1000;
-  return points.filter(p => new Date(p.timestamp).getTime() >= cutoff);
+  return { startMs: endMs - days * 86400000, endMs };
+}
+
+// Keep only points inside the shared window. Smoothing is computed on the FULL
+// history first, then sliced — so the trend line entering the window is warmed up.
+function sliceToWindow(points, win) {
+  if (!win || !points.length) return points;
+  return points.filter(p => { const t = new Date(p.timestamp).getTime(); return t >= win.startMs && t <= win.endMs; });
 }
 
 function loadGoalHeight() {
@@ -591,6 +630,35 @@ function findClosestAtOrBefore(points, cutoffMs) {
 
 function fmtShortDate(ts) {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Draw faint vertical lines where the calendar year changes, labeled with the year.
+// Silent when the whole series is within one year, so short ranges stay uncluttered.
+function drawYearMarkers(ctx, series, xFor, top, bottom) {
+  if (series.length < 2) return;
+  ctx.save();
+  ctx.font = '9px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  let prevYear = new Date(series[0].timestamp).getFullYear();
+  for (let i = 1; i < series.length; i++) {
+    const y = new Date(series[i].timestamp).getFullYear();
+    if (y !== prevYear) {
+      const x = xFor(i);
+      ctx.strokeStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.globalAlpha = 0.28;
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.fillText(String(y), x + 3, top + 1);
+      prevYear = y;
+    }
+  }
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
 }
 
 // Shared scrub interaction: attach once per canvas. Uses canvas._scrub (set at render).
@@ -723,6 +791,9 @@ function renderTrendChart(canvas, series, color, opts) {
       ctx.textAlign = 'right';
       ctx.fillText(fmtShortDate(series[series.length - 1].timestamp), cssWidth - marginR, cssHeight - 6);
     }
+
+    // year demarcations
+    drawYearMarkers(ctx, series, xFor, marginT, marginT + plotH);
 
     // goal line
     if (opts.goalLine != null) {
@@ -879,6 +950,8 @@ function renderBpChart() {
     ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
     ctx.textAlign = 'left'; ctx.fillText(fmtShortDate(pts[0].timestamp), marginL, cssH - 6);
     if (pts.length > 1) { ctx.textAlign = 'right'; ctx.fillText(fmtShortDate(pts[pts.length-1].timestamp), cssW - marginR, cssH - 6); }
+    // year demarcations
+    drawYearMarkers(ctx, pts, xFor, marginT, marginT + pH);
     // lines
     const drawLine = (arr, col) => {
       ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
@@ -1229,6 +1302,15 @@ document.getElementById('importFile').addEventListener('change', async (ev) => {
   } finally {
     ev.target.value = '';
   }
+});
+
+// Collapsible body log history
+document.getElementById('historyToggle').addEventListener('click', () => {
+  const scroll = document.getElementById('ledgerScroll');
+  const btn = document.getElementById('historyToggle');
+  const open = scroll.style.display !== 'none';
+  scroll.style.display = open ? 'none' : 'block';
+  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
 });
 
 // ============ Init ============
