@@ -228,6 +228,15 @@
 
   .lift-select-row { margin-bottom: 14px; }
 
+  .backup-note { font-size: 12px; color: var(--chalk-dim); line-height: 1.5; margin: 0 0 14px; }
+  .backup-row { display: flex; gap: 10px; }
+  .backup-btn { flex: 1; }
+  .backup-btn.ghost { background: transparent; color: var(--chalk); border: 1px solid var(--line); }
+  .backup-btn.ghost:active { filter: none; background: color-mix(in srgb, var(--chalk) 8%, transparent); }
+  .backup-status { font-size: 11px; color: var(--chalk-dim); margin-top: 10px; text-align: center; min-height: 14px; }
+  .backup-status.ok { color: var(--ok-green); }
+  .backup-status.err { color: var(--red); }
+
   .goal-save-btn { background: var(--iron-red); color: #0e1417; margin-bottom: 4px; }
   .stat-tiles { display: flex; gap: 10px; margin-top: 14px; }
   .stat-tile {
@@ -370,6 +379,17 @@
   <div class="panel">
     <h2 class="panel-title">Body Log History</h2>
     <div id="bodyLedger"></div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Backup</h2>
+    <p class="backup-note">Saves your body log (weight, waist, blood pressure), goal weight, and height. Lift data is backed up from the Iron Log page.</p>
+    <div class="backup-row">
+      <button class="log-btn backup-btn" id="exportBtn">Export Backup</button>
+      <button class="log-btn backup-btn ghost" id="importBtn">Import Backup</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
+    <div class="backup-status" id="backupStatus"></div>
   </div>
 </main>
 
@@ -1068,6 +1088,86 @@ document.querySelectorAll('#smoothToggle button').forEach(btn => {
     document.querySelectorAll('#smoothToggle button').forEach(b => b.classList.toggle('active', b === btn));
     renderBodyCharts();
   });
+});
+
+// ============ Backup: body entries + goal + height ============
+function setBackupStatus(msg, cls) {
+  const el = document.getElementById('backupStatus');
+  el.textContent = msg;
+  el.className = 'backup-status' + (cls ? ' ' + cls : '');
+}
+
+function exportBackup() {
+  try {
+    const payload = {
+      type: 'ironlog-reports-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      bodyEntries: bodyEntries,
+      goalWeight: goalWeight,
+      heightIn: heightIn
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reports-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setBackupStatus(`Exported ${bodyEntries.length} entr${bodyEntries.length === 1 ? 'y' : 'ies'} to Downloads ✓`, 'ok');
+    const btn = document.getElementById('exportBtn');
+    const orig = btn.textContent; btn.textContent = '✓ Exported'; btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+  } catch (e) {
+    setBackupStatus('Export failed: ' + e.message, 'err');
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportBackup);
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+
+document.getElementById('importFile').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    // accept either our backup object or a bare array of body entries
+    const incoming = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.bodyEntries) ? parsed.bodyEntries : null);
+    if (!incoming) throw new Error('unrecognized file');
+    const existingIds = new Set(bodyEntries.map(e => e.id));
+    let added = 0;
+    incoming.forEach(e => {
+      if (!e || !e.timestamp) return;
+      const hasData = typeof e.weight === 'number' || typeof e.waist === 'number' || (typeof e.sys === 'number' && typeof e.dia === 'number');
+      if (!hasData) return;
+      if (!e.id) e.id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      if (!existingIds.has(e.id)) { bodyEntries.push(e); existingIds.add(e.id); added++; }
+    });
+    // restore goal/height only if not already set locally
+    if (!Array.isArray(parsed)) {
+      if (goalWeight === null && typeof parsed.goalWeight === 'number') {
+        goalWeight = parsed.goalWeight;
+        localStorage.setItem('ironlog_goal_weight', goalWeight);
+        document.getElementById('goalWeight').value = goalWeight;
+      }
+      if (heightIn === null && typeof parsed.heightIn === 'number') {
+        heightIn = parsed.heightIn;
+        localStorage.setItem('ironlog_height_in', heightIn);
+        document.getElementById('heightIn').value = heightIn;
+      }
+    }
+    bodySaveLocal();
+    renderBodyLedger();
+    renderBodyCharts();
+    renderGoalBmi();
+    setBackupStatus(`Import complete: ${added} new entr${added === 1 ? 'y' : 'ies'} added (duplicates skipped)`, 'ok');
+  } catch (e) {
+    setBackupStatus('Import failed — is this a Reports backup file?', 'err');
+  } finally {
+    ev.target.value = '';
+  }
 });
 
 // ============ Init ============
