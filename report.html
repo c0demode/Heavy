@@ -661,6 +661,33 @@ function drawYearMarkers(ctx, series, xFor, top, bottom) {
   ctx.textBaseline = 'alphabetic';
 }
 
+// Year lines placed by absolute time (Jan 1 of each year within the window). Because
+// all body charts share the same window + margins, these align pixel-for-pixel across charts.
+function drawYearLinesByTime(ctx, win, xForMs, top, bottom) {
+  const startY = new Date(win.startMs).getFullYear();
+  const endY = new Date(win.endMs).getFullYear();
+  ctx.save();
+  ctx.font = '9px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  for (let y = startY + 1; y <= endY; y++) {
+    const ms = new Date(y, 0, 1).getTime();
+    if (ms < win.startMs || ms > win.endMs) continue;
+    const x = xForMs(ms);
+    ctx.strokeStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.globalAlpha = 0.28;
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.fillText(String(y), x + 3, top + 1);
+  }
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
 // Shared scrub interaction: attach once per canvas. Uses canvas._scrub (set at render).
 function attachScrub(canvas) {
   if (canvas._scrubAttached) return;
@@ -760,7 +787,12 @@ function renderTrendChart(canvas, series, color, opts) {
   const marginL = 38, marginR = 10, marginT = 12, marginB = 20;
   const plotW = cssWidth - marginL - marginR;
   const plotH = cssHeight - marginT - marginB;
-  const xFor = i => marginL + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
+  const win = opts.window;
+  const useTime = win && win.endMs > win.startMs;
+  const xForMs = ms => marginL + ((ms - win.startMs) / (win.endMs - win.startMs)) * plotW;
+  const xFor = useTime
+    ? (i => xForMs(new Date(series[i].timestamp).getTime()))
+    : (i => marginL + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW));
   const yFor = v => marginT + plotH - ((v - min) / (max - min)) * plotH;
 
   const drawBase = () => {
@@ -783,17 +815,16 @@ function renderTrendChart(canvas, series, color, opts) {
     });
     ctx.textBaseline = 'alphabetic';
 
-    // X date labels (first & last)
+    // X date labels — window bounds when shared window is set, else first/last point
     ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
     ctx.textAlign = 'left';
-    ctx.fillText(fmtShortDate(series[0].timestamp), marginL, cssHeight - 6);
-    if (series.length > 1) {
-      ctx.textAlign = 'right';
-      ctx.fillText(fmtShortDate(series[series.length - 1].timestamp), cssWidth - marginR, cssHeight - 6);
-    }
+    ctx.fillText(fmtShortDate(useTime ? win.startMs : series[0].timestamp), marginL, cssHeight - 6);
+    ctx.textAlign = 'right';
+    ctx.fillText(fmtShortDate(useTime ? win.endMs : series[series.length - 1].timestamp), cssWidth - marginR, cssHeight - 6);
 
     // year demarcations
-    drawYearMarkers(ctx, series, xFor, marginT, marginT + plotH);
+    if (useTime) drawYearLinesByTime(ctx, win, xForMs, marginT, marginT + plotH);
+    else drawYearMarkers(ctx, series, xFor, marginT, marginT + plotH);
 
     // goal line
     if (opts.goalLine != null) {
@@ -871,10 +902,11 @@ function renderBodyStat(statElId, subElId, points, unit) {
 }
 
 function renderBodyCharts() {
+  const win = getSharedWindow();
   const weightFull = computeSmoothedSeries(bodyEntries, 'weight');
   const waistFull = computeSmoothedSeries(bodyEntries, 'waist');
-  const weightPoints = sliceToRange(weightFull);
-  const waistPoints = sliceToRange(waistFull);
+  const weightPoints = sliceToWindow(weightFull, win);
+  const waistPoints = sliceToWindow(waistFull, win);
   const accent = themeColor('--iron-red', '#c23b22');
   const accent2 = themeColor('--plate-blue', '#5b6470');
   const suffix = smoothMode === 'raw' ? '(raw)' : '(smoothed)';
@@ -882,7 +914,7 @@ function renderBodyCharts() {
   document.getElementById('waistChartTitle').textContent = `Waist Trend ${suffix}`;
 
   // goal coloring uses full history for a stable reference; goal LINE only drawn when toggled on
-  let weightOpts = { fmt: v => v.toFixed(1) + ' lb' };
+  let weightOpts = { fmt: v => v.toFixed(1) + ' lb', window: win };
   if (goalWeight !== null && weightFull.length) {
     const field = smoothMode === 'raw' ? 'raw' : 'smoothed';
     const startDist = Math.abs(weightFull[0][field] - goalWeight) || 1;
@@ -890,20 +922,20 @@ function renderBodyCharts() {
     if (showGoalLine) weightOpts.goalLine = goalWeight;
   }
   renderTrendChart(document.getElementById('weightChart'), weightPoints, accent, weightOpts);
-  renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2, { fmt: v => v.toFixed(1) + ' in' });
+  renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2, { fmt: v => v.toFixed(1) + ' in', window: win });
   renderBodyStat('weightStat', 'weightSubstat', weightPoints, 'lb');
   renderBodyStat('waistStat', 'waistSubstat', waistPoints, 'in');
-  renderBpChart();
+  renderBpChart(win);
 }
 
 // Blood pressure: two lines (systolic + diastolic), no smoothing, plus category on latest
-function renderBpChart() {
+function renderBpChart(win) {
   const canvas = document.getElementById('bpChart');
   const statEl = document.getElementById('bpStat');
   const subEl = document.getElementById('bpSubstat');
-  const pts = sliceToRange(bodyEntries
+  const pts = sliceToWindow(bodyEntries
     .filter(e => typeof e.sys === 'number' && typeof e.dia === 'number')
-    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)));
+    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)), win);
 
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || 300, cssH = canvas.clientHeight || 130;
@@ -924,9 +956,13 @@ function renderBpChart() {
 
   const sys = pts.map(p=>p.sys), dia = pts.map(p=>p.dia);
   let min = Math.min(...dia) - 8, max = Math.max(...sys) + 8;
-  const marginL = 34, marginR = 10, marginT = 12, marginB = 20;
+  const marginL = 38, marginR = 10, marginT = 12, marginB = 20;
   const pW = cssW - marginL - marginR, pH = cssH - marginT - marginB;
-  const xFor = i => marginL + (pts.length===1 ? pW/2 : (i/(pts.length-1))*pW);
+  const useTime = win && win.endMs > win.startMs;
+  const xForMs = ms => marginL + ((ms - win.startMs) / (win.endMs - win.startMs)) * pW;
+  const xFor = useTime
+    ? (i => xForMs(new Date(pts[i].timestamp).getTime()))
+    : (i => marginL + (pts.length===1 ? pW/2 : (i/(pts.length-1))*pW));
   const yFor = v => marginT + pH - ((v-min)/(max-min))*pH;
   const sysCol = themeColor('--iron-red', '#c23b22');
   const diaCol = themeColor('--plate-blue', '#5b6470');
@@ -946,12 +982,13 @@ function renderBpChart() {
       ctx.fillText(Math.round(v), marginL - 5, y);
     });
     ctx.textBaseline = 'alphabetic';
-    // X date labels
+    // X date labels — window bounds when shared window set
     ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
-    ctx.textAlign = 'left'; ctx.fillText(fmtShortDate(pts[0].timestamp), marginL, cssH - 6);
-    if (pts.length > 1) { ctx.textAlign = 'right'; ctx.fillText(fmtShortDate(pts[pts.length-1].timestamp), cssW - marginR, cssH - 6); }
+    ctx.textAlign = 'left'; ctx.fillText(fmtShortDate(useTime ? win.startMs : pts[0].timestamp), marginL, cssH - 6);
+    ctx.textAlign = 'right'; ctx.fillText(fmtShortDate(useTime ? win.endMs : pts[pts.length-1].timestamp), cssW - marginR, cssH - 6);
     // year demarcations
-    drawYearMarkers(ctx, pts, xFor, marginT, marginT + pH);
+    if (useTime) drawYearLinesByTime(ctx, win, xForMs, marginT, marginT + pH);
+    else drawYearMarkers(ctx, pts, xFor, marginT, marginT + pH);
     // lines
     const drawLine = (arr, col) => {
       ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
