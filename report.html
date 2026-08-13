@@ -144,6 +144,24 @@
     margin-bottom: 14px;
   }
   .panel-title-row .panel-title { margin: 0; }
+  .chart-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .goal-check {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--chalk-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .goal-check input { width: 16px; height: 16px; accent-color: var(--ok-green); }
   .mini-seg {
     display: flex;
     background: var(--bg);
@@ -337,6 +355,18 @@
         <button data-mode="raw">Raw</button>
       </div>
     </div>
+    <div class="chart-controls">
+      <div class="mini-seg" id="rangeToggle">
+        <button data-range="30">30d</button>
+        <button data-range="90" class="active">90d</button>
+        <button data-range="365">1y</button>
+        <button data-range="all">All</button>
+      </div>
+      <label class="goal-check">
+        <input type="checkbox" id="goalLineToggle">
+        <span>Goal line</span>
+      </label>
+    </div>
     <div class="chart-block" style="border-top:none; padding-top:0; margin-top:0;">
       <div class="chart-header">
         <span class="chart-title" id="weightChartTitle">Weight Trend (smoothed)</span>
@@ -430,8 +460,21 @@ function themeColor(varName, fallback) {
 const BODY_SMOOTHING_N = 10; // classic Hacker's Diet damping factor (~10-day exponential average)
 let bodyEntries = [];
 let smoothMode = 'smoothed'; // 'smoothed' | 'raw'
+let chartRange = '90';       // '30' | '90' | '365' | 'all' (days)
+let showGoalLine = false;    // goal line off by default so the data isn't flattened
 let goalWeight = null;
 let heightIn = null;
+
+// Keep only the series points within the selected time window (by most recent point).
+// Smoothing is computed on the FULL history first, then we slice — so the trend line
+// entering the window is already "warmed up" rather than re-seeding mid-stream.
+function sliceToRange(points) {
+  if (chartRange === 'all' || !points.length) return points;
+  const days = parseInt(chartRange, 10);
+  const latest = new Date(points[points.length - 1].timestamp).getTime();
+  const cutoff = latest - days * 24 * 60 * 60 * 1000;
+  return points.filter(p => new Date(p.timestamp).getTime() >= cutoff);
+}
 
 function loadGoalHeight() {
   const g = parseFloat(localStorage.getItem('ironlog_goal_weight'));
@@ -757,20 +800,23 @@ function renderBodyStat(statElId, subElId, points, unit) {
 }
 
 function renderBodyCharts() {
-  const weightPoints = computeSmoothedSeries(bodyEntries, 'weight');
-  const waistPoints = computeSmoothedSeries(bodyEntries, 'waist');
+  const weightFull = computeSmoothedSeries(bodyEntries, 'weight');
+  const waistFull = computeSmoothedSeries(bodyEntries, 'waist');
+  const weightPoints = sliceToRange(weightFull);
+  const waistPoints = sliceToRange(waistFull);
   const accent = themeColor('--iron-red', '#c23b22');
   const accent2 = themeColor('--plate-blue', '#5b6470');
   const suffix = smoothMode === 'raw' ? '(raw)' : '(smoothed)';
   document.getElementById('weightChartTitle').textContent = `Weight Trend ${suffix}`;
   document.getElementById('waistChartTitle').textContent = `Waist Trend ${suffix}`;
 
-  // goal coloring reference: distance from goal at the very first logged weight
+  // goal coloring uses full history for a stable reference; goal LINE only drawn when toggled on
   let weightOpts = { fmt: v => v.toFixed(1) + ' lb' };
-  if (goalWeight !== null && weightPoints.length) {
+  if (goalWeight !== null && weightFull.length) {
     const field = smoothMode === 'raw' ? 'raw' : 'smoothed';
-    const startDist = Math.abs(weightPoints[0][field] - goalWeight) || 1;
-    weightOpts = Object.assign(weightOpts, { goalLine: goalWeight, colorByGoal: true, startDist });
+    const startDist = Math.abs(weightFull[0][field] - goalWeight) || 1;
+    weightOpts = Object.assign(weightOpts, { colorByGoal: true, startDist });
+    if (showGoalLine) weightOpts.goalLine = goalWeight;
   }
   renderTrendChart(document.getElementById('weightChart'), weightPoints, accent, weightOpts);
   renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2, { fmt: v => v.toFixed(1) + ' in' });
@@ -784,9 +830,9 @@ function renderBpChart() {
   const canvas = document.getElementById('bpChart');
   const statEl = document.getElementById('bpStat');
   const subEl = document.getElementById('bpSubstat');
-  const pts = bodyEntries
+  const pts = sliceToRange(bodyEntries
     .filter(e => typeof e.sys === 'number' && typeof e.dia === 'number')
-    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)));
 
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || 300, cssH = canvas.clientHeight || 130;
@@ -1088,6 +1134,21 @@ document.querySelectorAll('#smoothToggle button').forEach(btn => {
     document.querySelectorAll('#smoothToggle button').forEach(b => b.classList.toggle('active', b === btn));
     renderBodyCharts();
   });
+});
+
+// Time-frame selector — zoom into recent data so week-to-week movement is visible
+document.querySelectorAll('#rangeToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    chartRange = btn.dataset.range;
+    document.querySelectorAll('#rangeToggle button').forEach(b => b.classList.toggle('active', b === btn));
+    renderBodyCharts();
+  });
+});
+
+// Goal line toggle — off by default so the axis fits the data, not the goal
+document.getElementById('goalLineToggle').addEventListener('change', (e) => {
+  showGoalLine = e.target.checked;
+  renderBodyCharts();
 });
 
 // ============ Backup: body entries + goal + height ============
