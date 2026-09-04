@@ -46,6 +46,19 @@
     min-height: 100vh;
     padding-bottom: 40px;
   }
+  /* ambient color field behind everything — gives the frosted tiles something to pick up */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 90% 55% at 12% 2%, color-mix(in srgb, var(--iron-red) 42%, transparent), transparent 62%),
+      radial-gradient(ellipse 75% 50% at 98% 18%, color-mix(in srgb, var(--plate-blue) 40%, transparent), transparent 58%),
+      radial-gradient(ellipse 85% 55% at 88% 72%, color-mix(in srgb, var(--iron-red) 30%, transparent), transparent 60%),
+      radial-gradient(ellipse 95% 60% at 45% 108%, color-mix(in srgb, var(--ok-green) 32%, transparent), transparent 62%);
+  }
 
   h1, .display {
     font-family: 'Space Grotesk', sans-serif;
@@ -54,15 +67,17 @@
   }
 
   header {
-    padding: 22px 18px 14px;
-    border-bottom: 1px solid var(--line);
+    padding: 16px 16px 4px;
+    max-width: 480px;
+    margin: 0 auto;
   }
 
   header h1 {
     margin: 0;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: var(--chalk);
+    letter-spacing: 0.01em;
   }
 
   .title-row {
@@ -238,11 +253,44 @@
   main { padding: 18px; max-width: 480px; margin: 0 auto; }
 
   .bar-panel {
+    position: relative;
     background: var(--panel);
+    background: color-mix(in srgb, var(--panel) 48%, transparent);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
     border: 1px solid var(--line);
+    border: 1px solid color-mix(in srgb, var(--chalk) 14%, transparent);
     padding: 16px;
-    margin-bottom: 16px;
-    border-radius: 16px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  /* localized bloom baked into each tile, like the Sober Log hero glow */
+  .bar-panel::before {
+    content: "";
+    position: absolute;
+    top: -45%;
+    left: 50%;
+    width: 130%;
+    height: 100%;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--iron-red) 34%, transparent), transparent 68%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bar-panel > * { position: relative; z-index: 1; }
+  /* cycle glow hue down the page so tiles don't all share one tint */
+  .bar-panel:nth-of-type(3n+2)::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--plate-blue) 40%, transparent), transparent 68%);
+  }
+  .bar-panel:nth-of-type(3n)::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--ok-green) 32%, transparent), transparent 68%);
+  }
+  /* the top tile gets the strongest, most focal glow */
+  .workout-panel::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--iron-red) 46%, transparent), transparent 70%);
+    height: 115%;
   }
 
   .bar-rack {
@@ -543,6 +591,8 @@
   }
   .clear-btn:hover { color: var(--iron-red); }
   a.clear-btn { text-decoration: none; display: inline-block; }
+  .cloud-status { font-size: 10px; color: var(--chalk-dim); align-self: center; }
+  .cloud-status.synced { color: var(--ok-green); }
   .tap-hint {
     font-size: 10px;
     color: var(--chalk-dim);
@@ -628,8 +678,12 @@
   .debug-panel {
     margin-top: 10px;
     border: 1px solid var(--line);
+    border: 1px solid color-mix(in srgb, var(--chalk) 12%, transparent);
     background: var(--panel);
-    border-radius: 12px;
+    background: color-mix(in srgb, var(--panel) 70%, transparent);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border-radius: 14px;
     overflow: hidden;
   }
   .debug-panel-header {
@@ -838,7 +892,7 @@
   <div class="nav">
     <a href="drinks.html">&larr; Sober Log</a>
     <span class="nav-title">IRON LOG</span>
-    <a href="report.html">Reports →</a>
+    <a href="reports/">Reports →</a>
   </div>
   <div class="title-row">
     <h1>Iron Log</h1>
@@ -852,6 +906,8 @@
   </div>
   <div class="backup-row">
     <button class="clear-btn" id="themeToggleBtn">Theme</button>
+    <button class="clear-btn" id="cloudBtn">☁ Sign in</button>
+    <span class="cloud-status" id="cloudStatus"></span>
   </div>
   <div class="debug-panel" id="themePanel" style="display:none;">
     <div class="debug-panel-header"><span>Theme</span></div>
@@ -2233,6 +2289,42 @@ function getLastEntry() {
     }
     logEvent('info', `Carried forward last set: ${last.lift} (${last.equipment || 'barbell'})`);
   }
+})();
+</script>
+
+<!-- Cloud sync: loads the shared Firebase module, then wires Iron Log's data key -->
+<script type="module" src="firebase-sync.js"></script>
+<script>
+(function wireCloud() {
+  const btn = document.getElementById('cloudBtn');
+  const status = document.getElementById('cloudStatus');
+
+  function setup() {
+    if (!window.CloudSync) return;
+    // Reflect auth state in the header button
+    window.CloudSync.onAuth(user => {
+      if (user) {
+        btn.textContent = '☁ Sign out';
+        status.textContent = (user.displayName || user.email || 'Signed in').split(' ')[0] + ' · synced';
+        status.classList.add('synced');
+      } else {
+        btn.textContent = '☁ Sign in';
+        status.textContent = 'local only';
+        status.classList.remove('synced');
+      }
+    });
+    btn.addEventListener('click', () => {
+      window.CloudSync.getUser() ? window.CloudSync.signOut() : window.CloudSync.signIn();
+    });
+    // Declare which localStorage keys this app owns, and how to re-render on remote changes.
+    window.CloudSync.registerKeys(
+      [{ key: 'ironlog_entries', type: 'entries' }],
+      () => { loadLocal(); renderLedger(); renderTodayWorkout(); }
+    );
+  }
+
+  if (window.CloudSync) setup();
+  else window.addEventListener('cloudsync-ready', setup, { once: true });
 })();
 </script>
 </body>
