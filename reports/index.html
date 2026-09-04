@@ -1,1 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Iron Log — Reports</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
+  :root {
+    --bg: #1a1d23;
+    --panel: #232830;
+    --line: #363d48;
+    --chalk: #ecebe6;
+    --chalk-dim: #9aa0a9;
+    --iron-red: #4fb6c9;
+    --plate-blue: #6f7885;
+    --ok-green: #3f8f62;
+    --red: #c0483f;
+    --amber: #e0a452;
+  }
+  body.girl-mode {
+    --bg: #fff6fa;
+    --panel: #ffffff;
+    --line: #f6cee4;
+    --chalk: #4a2b41;
+    --chalk-dim: #b784a6;
+    --iron-red: #ec4899;
+    --plate-blue: #f9a8d4;
+    --ok-green: #4caf7d;
+    --red: #e5484d;
+    --amber: #d9a441;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--chalk);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 90% 55% at 12% 2%, color-mix(in srgb, var(--iron-red) 42%, transparent), transparent 62%),
+      radial-gradient(ellipse 75% 50% at 98% 18%, color-mix(in srgb, var(--plate-blue) 40%, transparent), transparent 58%),
+      radial-gradient(ellipse 85% 55% at 88% 72%, color-mix(in srgb, var(--iron-red) 30%, transparent), transparent 60%),
+      radial-gradient(ellipse 95% 60% at 45% 108%, color-mix(in srgb, var(--ok-green) 32%, transparent), transparent 62%);
+  }
+  h1, h2, .display {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  header {
+    padding: 16px 16px 4px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  header h1 { margin: 0; font-size: 24px; font-weight: 700; color: var(--chalk); letter-spacing: 0.01em; }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 2px 14px;
+  }
+  .nav a {
+    color: var(--chalk-dim);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .nav a:hover { color: var(--chalk); }
+  .nav-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--chalk-dim);
+  }
+
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
+
+  .panel {
+    position: relative;
+    background: var(--panel);
+    background: color-mix(in srgb, var(--panel) 48%, transparent);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+    border: 1px solid var(--line);
+    border: 1px solid color-mix(in srgb, var(--chalk) 14%, transparent);
+    padding: 16px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: -45%;
+    left: 50%;
+    width: 130%;
+    height: 100%;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--iron-red) 34%, transparent), transparent 68%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .panel > * { position: relative; z-index: 1; }
+  .panel:nth-of-type(3n+2)::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--plate-blue) 40%, transparent), transparent 68%);
+  }
+  .panel:nth-of-type(3n)::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--ok-green) 32%, transparent), transparent 68%);
+  }
+  .panel:first-of-type::before {
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--iron-red) 46%, transparent), transparent 70%);
+    height: 115%;
+  }
+
+  .panel-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 14px;
+    color: var(--chalk-dim);
+  }
+  .panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .panel-title-row .panel-title { margin: 0; }
+  .history-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .history-chevron {
+    color: var(--chalk-dim);
+    font-size: 14px;
+    transition: transform 0.15s ease;
+  }
+  .history-toggle[aria-expanded="true"] .history-chevron { transform: rotate(90deg); }
+  .ledger-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 12px;
+    -webkit-overflow-scrolling: touch;
+    border-top: 1px solid var(--line);
+  }
+  .chart-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .goal-check {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--chalk-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .goal-check input { width: 16px; height: 16px; accent-color: var(--ok-green); }
+  #rangeToggle { flex-wrap: wrap; }
+  #rangeToggle button { padding: 5px 8px; }
+  .mini-seg {
+    display: flex;
+    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .mini-seg button {
+    background: transparent;
+    border: none;
+    color: var(--chalk-dim);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 7px;
+  }
+  .mini-seg button.active { background: var(--iron-red); color: #0e1417; }
+
+  .field-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .field { flex: 1; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--chalk-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  input[type=number], input[type=datetime-local], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--chalk);
+    padding: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--iron-red); }
+
+  .log-btn {
+    width: 100%;
+    background: var(--ok-green);
+    color: #f2fbf6;
+    border: none;
+    padding: 13px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    border-radius: 10px;
+  }
+  .log-btn:active { filter: brightness(1.12); }
+
+  .chart-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .chart-block:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .chart-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--chalk-dim); }
+  .chart-stat { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); }
+  .chart-canvas { width: 100%; height: 130px; display: block; border: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 55%, transparent); border-radius: 10px; touch-action: none; }
+  .chart-substat { font-size: 10px; color: var(--chalk-dim); margin-top: 6px; text-align: right; }
+
+  .ledger-day { margin-bottom: 4px; }
+  .day-label {
+    font-size: 11px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 14px 0 6px; border-bottom: 1px solid var(--line);
+  }
+  .entry { display: flex; justify-content: space-between; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .entry .name { font-family: 'Space Grotesk', sans-serif; font-size: 14px; letter-spacing: 0.03em; }
+  .entry .load { font-size: 15px; color: var(--chalk); }
+  .entry .time { font-size: 10px; color: var(--chalk-dim); margin-left: 8px; }
+  .entry .del { background: none; border: none; color: var(--chalk-dim); font-size: 14px; cursor: pointer; padding: 0 0 0 12px; }
+  .entry .del:hover { color: var(--iron-red); }
+
+  .empty { text-align: center; color: var(--chalk-dim); font-size: 12px; padding: 20px 0; }
+
+  .lift-select-row { margin-bottom: 14px; }
+
+  .backup-note { font-size: 12px; color: var(--chalk-dim); line-height: 1.5; margin: 0 0 14px; }
+  .backup-row { display: flex; gap: 10px; }
+  .backup-btn { flex: 1; }
+  .backup-btn.ghost { background: transparent; color: var(--chalk); border: 1px solid var(--line); }
+  .backup-btn.ghost:active { filter: none; background: color-mix(in srgb, var(--chalk) 8%, transparent); }
+  .backup-status { font-size: 11px; color: var(--chalk-dim); margin-top: 10px; text-align: center; min-height: 14px; }
+  .backup-status.ok { color: var(--ok-green); }
+  .backup-status.err { color: var(--red); }
+
+  .goal-save-btn { background: var(--iron-red); color: #0e1417; margin-bottom: 4px; }
+  .stat-tiles { display: flex; gap: 10px; margin-top: 14px; }
+  .stat-tile {
+    flex: 1;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-tile-val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--chalk);
+    line-height: 1.1;
+  }
+  .stat-tile-lbl { font-size: 10px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+  .bmi-under { color: var(--amber) !important; }
+  .bmi-normal { color: var(--ok-green) !important; }
+  .bmi-over { color: var(--amber) !important; }
+  .bmi-obese { color: var(--red) !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="../index.html">&larr; Iron Log</a>
+    <span class="nav-title">REPORTS</span>
+    <a href="../drinks.html">Sober Log →</a>
+  </div>
+  <h1>Reports</h1>
+</header>
+
+<main>
+  <div class="panel" id="bodyLogPanel">
+    <h2 class="panel-title">Log Body Stats</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodyWeight">Weight (lb)</label>
+        <input type="number" id="bodyWeight" inputmode="decimal" placeholder="185.0" step="0.1">
+      </div>
+      <div class="field">
+        <label for="bodyWaist">Waist (in)</label>
+        <input type="number" id="bodyWaist" inputmode="decimal" placeholder="34.0" step="0.1">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodySys">BP Systolic</label>
+        <input type="number" id="bodySys" inputmode="numeric" placeholder="120">
+      </div>
+      <div class="field">
+        <label for="bodyDia">BP Diastolic</label>
+        <input type="number" id="bodyDia" inputmode="numeric" placeholder="80">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="bodyWhen">Date</label>
+        <input type="datetime-local" id="bodyWhen">
+      </div>
+    </div>
+    <button class="log-btn" id="bodyLogBtn">Log Body Stats</button>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Goal &amp; BMI</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="goalWeight">Goal weight (lb)</label>
+        <input type="number" id="goalWeight" inputmode="decimal" placeholder="175.0" step="0.1">
+      </div>
+      <div class="field">
+        <label for="heightIn">Height (in)</label>
+        <input type="number" id="heightIn" inputmode="decimal" placeholder="70" step="0.5">
+      </div>
+    </div>
+    <button class="log-btn goal-save-btn" id="goalSaveBtn">Save Goal &amp; Height</button>
+    <div class="stat-tiles">
+      <div class="stat-tile">
+        <div class="stat-tile-val" id="goalDeltaVal">—</div>
+        <div class="stat-tile-lbl" id="goalDeltaLbl">to goal</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile-val" id="bmiVal">—</div>
+        <div class="stat-tile-lbl" id="bmiLbl">BMI</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title-row">
+      <h2 class="panel-title">Weight &amp; Measurements</h2>
+      <div class="mini-seg" id="smoothToggle">
+        <button data-mode="smoothed" class="active">Smoothed</button>
+        <button data-mode="raw">Raw</button>
+      </div>
+    </div>
+    <div class="chart-controls">
+      <div class="mini-seg" id="rangeToggle">
+        <button data-range="7">7d</button>
+        <button data-range="14">14d</button>
+        <button data-range="30">30d</button>
+        <button data-range="90" class="active">90d</button>
+        <button data-range="365">1y</button>
+        <button data-range="all">All</button>
+      </div>
+      <label class="goal-check">
+        <input type="checkbox" id="goalLineToggle">
+        <span>Goal line</span>
+      </label>
+    </div>
+    <div class="chart-block" style="border-top:none; padding-top:0; margin-top:0;">
+      <div class="chart-header">
+        <span class="chart-title" id="weightChartTitle">Weight Trend (smoothed)</span>
+        <span class="chart-stat" id="weightStat">—</span>
+      </div>
+      <canvas id="weightChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="weightSubstat">No data yet</div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="chart-title" id="waistChartTitle">Waist Trend (smoothed)</span>
+        <span class="chart-stat" id="waistStat">—</span>
+      </div>
+      <canvas id="waistChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="waistSubstat">No data yet</div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="chart-title">Blood Pressure</span>
+        <span class="chart-stat" id="bpStat">—</span>
+      </div>
+      <canvas id="bpChart" class="chart-canvas"></canvas>
+      <div class="chart-substat" id="bpSubstat">No data yet</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Lift Progress</h2>
+    <div class="lift-select-row">
+      <select id="liftSelect"></select>
+    </div>
+    <div class="chart-header">
+      <span class="chart-title" id="liftChartTitle">Estimated 1RM Trend</span>
+      <span class="chart-stat" id="liftStat">—</span>
+    </div>
+    <canvas id="liftChart" class="chart-canvas"></canvas>
+    <div class="chart-substat" id="liftSubstat">No data yet</div>
+  </div>
+
+  <div class="panel">
+    <button class="panel-title-row history-toggle" id="historyToggle" aria-expanded="false">
+      <h2 class="panel-title">Body Log History</h2>
+      <span class="history-chevron" id="historyChevron">▸</span>
+    </button>
+    <div class="ledger-scroll" id="ledgerScroll" style="display:none;">
+      <div id="bodyLedger"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Backup</h2>
+    <p class="backup-note">Saves your body log (weight, waist, blood pressure), goal weight, and height. Lift data is backed up from the Iron Log page.</p>
+    <div class="backup-row">
+      <button class="log-btn backup-btn" id="exportBtn">Export Backup</button>
+      <button class="log-btn backup-btn ghost" id="importBtn">Import Backup</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
+    <div class="backup-status" id="backupStatus"></div>
+  </div>
+</main>
+
+<script>
+// --- Apply whatever theme is active on the main app, so this page matches ---
+(function applySavedTheme() {
+  try {
+    const mode = localStorage.getItem('theme_mode') || (localStorage.getItem('girl_mode') === '1' ? 'girl' : 'default');
+    if (mode === 'girl') {
+      document.body.classList.add('girl-mode');
+    } else if (mode === 'custom') {
+      const saved = JSON.parse(localStorage.getItem('theme_custom_vars') || 'null');
+      if (saved) {
+        const map = { bg:'--bg', panel:'--panel', line:'--line', chalk:'--chalk', chalkDim:'--chalk-dim', accent:'--iron-red', accent2:'--plate-blue', ok:'--ok-green' };
+        Object.keys(map).forEach(k => { if (saved[k]) document.body.style.setProperty(map[k], saved[k]); });
+      }
+    }
+  } catch (e) {}
+})();
+
+function nowLocalISO() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+function fmtDay(dateStr) {
+  return new Date(dateStr).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function fmtTime(dateStr) {
+  return new Date(dateStr).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+function themeColor(varName, fallback) {
+  const v = getComputedStyle(document.body).getPropertyValue(varName).trim();
+  return v || fallback;
+}
+
+// ============ BODY LOG (weight / waist, Hacker's Diet smoothing) ============
+const BODY_SMOOTHING_N = 10; // classic Hacker's Diet damping factor (~10-day exponential average)
+let bodyEntries = [];
+let smoothMode = 'smoothed'; // 'smoothed' | 'raw'
+let chartRange = '90';       // '30' | '90' | '365' | 'all' (days)
+let showGoalLine = false;    // goal line off by default so the data isn't flattened
+let goalWeight = null;
+let heightIn = null;
+
+// A single shared time window across ALL body metrics, so weight/waist/BP charts
+// line up on the same calendar axis. endMs = the most recent point across any metric.
+function getSharedWindow() {
+  const ts = bodyEntries
+    .filter(e => typeof e.weight === 'number' || typeof e.waist === 'number' || (typeof e.sys === 'number' && typeof e.dia === 'number'))
+    .map(e => new Date(e.timestamp).getTime());
+  if (!ts.length) return null;
+  const endMs = Math.max(...ts);
+  if (chartRange === 'all') return { startMs: Math.min(...ts), endMs };
+  const days = parseInt(chartRange, 10);
+  return { startMs: endMs - days * 86400000, endMs };
+}
+
+// Keep only points inside the shared window. Smoothing is computed on the FULL
+// history first, then sliced — so the trend line entering the window is warmed up.
+function sliceToWindow(points, win) {
+  if (!win || !points.length) return points;
+  return points.filter(p => { const t = new Date(p.timestamp).getTime(); return t >= win.startMs && t <= win.endMs; });
+}
+
+function loadGoalHeight() {
+  const g = parseFloat(localStorage.getItem('ironlog_goal_weight'));
+  const h = parseFloat(localStorage.getItem('ironlog_height_in'));
+  goalWeight = isNaN(g) ? null : g;
+  heightIn = isNaN(h) ? null : h;
+  if (goalWeight !== null) document.getElementById('goalWeight').value = goalWeight;
+  if (heightIn !== null) document.getElementById('heightIn').value = heightIn;
+}
+
+function bodySaveLocal() {
+  try { localStorage.setItem('ironlog_body_entries', JSON.stringify(bodyEntries)); } catch (e) { console.error('body save failed', e); }
+}
+function bodyLoadLocal() {
+  try {
+    const raw = localStorage.getItem('ironlog_body_entries');
+    if (raw) bodyEntries = JSON.parse(raw);
+  } catch (e) { bodyEntries = []; }
+}
+
+// color for a weight value by proximity to goal: at goal = green, at/beyond the
+// starting distance = red, interpolated in between. Returns an rgb() string.
+function goalColor(value, startDist) {
+  if (goalWeight === null || !startDist) return themeColor('--iron-red', '#4fb6c9');
+  const dist = Math.abs(value - goalWeight);
+  const t = Math.max(0, Math.min(1, dist / startDist)); // 0 at goal, 1 at/over start distance
+  // green (63,143,98) -> amber (224,164,82) -> red (192,72,63)
+  const green = [63,143,98], amber = [224,164,82], red = [192,72,63];
+  let c;
+  if (t < 0.5) { const k = t/0.5; c = green.map((g,i)=>Math.round(g+(amber[i]-g)*k)); }
+  else { const k = (t-0.5)/0.5; c = amber.map((a,i)=>Math.round(a+(red[i]-a)*k)); }
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function getBmiInfo(weight) {
+  if (!heightIn || !weight) return null;
+  const bmi = 703 * weight / (heightIn * heightIn);
+  let cat, cls;
+  if (bmi < 18.5) { cat = 'Underweight'; cls = 'bmi-under'; }
+  else if (bmi < 25) { cat = 'Normal'; cls = 'bmi-normal'; }
+  else if (bmi < 30) { cat = 'Overweight'; cls = 'bmi-over'; }
+  else { cat = 'Obese'; cls = 'bmi-obese'; }
+  return { bmi, cat, cls };
+}
+
+function latestWeight() {
+  const ws = bodyEntries.filter(e => typeof e.weight === 'number').sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  return ws.length ? ws[ws.length-1].weight : null;
+}
+
+function renderGoalBmi() {
+  const w = latestWeight();
+  const deltaVal = document.getElementById('goalDeltaVal');
+  const deltaLbl = document.getElementById('goalDeltaLbl');
+  if (goalWeight !== null && w !== null) {
+    const diff = w - goalWeight;
+    if (Math.abs(diff) < 0.05) { deltaVal.textContent = '🎯'; deltaLbl.textContent = 'goal reached'; }
+    else { deltaVal.textContent = `${diff > 0 ? '' : '+'}${(-diff).toFixed(1)}`; deltaLbl.textContent = `lb to goal (${goalWeight})`; }
+  } else {
+    deltaVal.textContent = '—';
+    deltaLbl.textContent = goalWeight === null ? 'set a goal' : 'log a weight';
+  }
+  const bmiVal = document.getElementById('bmiVal');
+  const bmiLbl = document.getElementById('bmiLbl');
+  bmiVal.className = 'stat-tile-val';
+  const info = getBmiInfo(w);
+  if (info) {
+    bmiVal.textContent = info.bmi.toFixed(1);
+    bmiVal.classList.add(info.cls);
+    bmiLbl.textContent = `BMI · ${info.cat}`;
+  } else {
+    bmiVal.textContent = '—';
+    bmiLbl.textContent = heightIn === null ? 'set height' : 'log a weight';
+  }
+}
+
+document.getElementById('goalSaveBtn').addEventListener('click', () => {
+  const g = parseFloat(document.getElementById('goalWeight').value);
+  const h = parseFloat(document.getElementById('heightIn').value);
+  goalWeight = isNaN(g) ? null : g;
+  heightIn = isNaN(h) ? null : h;
+  try {
+    if (goalWeight !== null) localStorage.setItem('ironlog_goal_weight', goalWeight); else localStorage.removeItem('ironlog_goal_weight');
+    if (heightIn !== null) localStorage.setItem('ironlog_height_in', heightIn); else localStorage.removeItem('ironlog_height_in');
+  } catch (e) {}
+  renderGoalBmi();
+  renderBodyCharts();
+  const btn = document.getElementById('goalSaveBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = orig, 1400);
+});
+
+// Hacker's Diet exponential smoothing: smoothed[i] = smoothed[i-1] + (raw[i] - smoothed[i-1]) / N
+// Seeds with the first raw value, then damps day-to-day noise (water weight, etc.) toward the true trend.
+function computeSmoothedSeries(rawEntries, key) {
+  const points = rawEntries
+    .filter(e => typeof e[key] === 'number')
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  let smoothed = null;
+  return points.map(p => {
+    smoothed = (smoothed === null) ? p[key] : smoothed + (p[key] - smoothed) / BODY_SMOOTHING_N;
+    return { timestamp: p.timestamp, raw: p[key], smoothed };
+  });
+}
+
+function findClosestAtOrBefore(points, cutoffMs) {
+  let candidate = null;
+  for (const p of points) {
+    if (new Date(p.timestamp).getTime() <= cutoffMs) candidate = p; else break;
+  }
+  return candidate;
+}
+
+function fmtShortDate(ts) {
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Draw faint vertical lines where the calendar year changes, labeled with the year.
+// Silent when the whole series is within one year, so short ranges stay uncluttered.
+function drawYearMarkers(ctx, series, xFor, top, bottom) {
+  if (series.length < 2) return;
+  ctx.save();
+  ctx.font = '9px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  let prevYear = new Date(series[0].timestamp).getFullYear();
+  for (let i = 1; i < series.length; i++) {
+    const y = new Date(series[i].timestamp).getFullYear();
+    if (y !== prevYear) {
+      const x = xFor(i);
+      ctx.strokeStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.globalAlpha = 0.28;
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.fillText(String(y), x + 3, top + 1);
+      prevYear = y;
+    }
+  }
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Year lines placed by absolute time (Jan 1 of each year within the window). Because
+// all body charts share the same window + margins, these align pixel-for-pixel across charts.
+function drawYearLinesByTime(ctx, win, xForMs, top, bottom) {
+  const startY = new Date(win.startMs).getFullYear();
+  const endY = new Date(win.endMs).getFullYear();
+  ctx.save();
+  ctx.font = '9px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  for (let y = startY + 1; y <= endY; y++) {
+    const ms = new Date(y, 0, 1).getTime();
+    if (ms < win.startMs || ms > win.endMs) continue;
+    const x = xForMs(ms);
+    ctx.strokeStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.globalAlpha = 0.28;
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.fillText(String(y), x + 3, top + 1);
+  }
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Shared scrub interaction: attach once per canvas. Uses canvas._scrub (set at render).
+function attachScrub(canvas) {
+  if (canvas._scrubAttached) return;
+  canvas._scrubAttached = true;
+  const handle = (clientX) => {
+    const s = canvas._scrub;
+    if (!s || !s.points.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    let best = 0, bestD = Infinity;
+    s.points.forEach((p, i) => { const d = Math.abs(p.x - x); if (d < bestD) { bestD = d; best = i; } });
+    s.redrawBase();
+    drawScrubOverlay(canvas, best);
+  };
+  const clear = () => { const s = canvas._scrub; if (s) s.redrawBase(); };
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); handle(e.clientX); });
+  canvas.addEventListener('pointermove', e => { if (e.buttons || e.pressure > 0) handle(e.clientX); });
+  canvas.addEventListener('pointerup', clear);
+  canvas.addEventListener('pointercancel', clear);
+  canvas.addEventListener('pointerleave', e => { if (!e.buttons) clear(); });
+}
+
+function drawScrubOverlay(canvas, idx) {
+  const s = canvas._scrub;
+  const p = s.points[idx];
+  const ctx = canvas.getContext('2d');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  // crosshair
+  ctx.save();
+  ctx.strokeStyle = themeColor('--chalk-dim', '#8c8f94');
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(p.x, s.plotTop); ctx.lineTo(p.x, s.plotBottom); ctx.stroke();
+  ctx.restore();
+  // marker
+  ctx.fillStyle = p.color || themeColor('--iron-red', '#4fb6c9');
+  ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = themeColor('--panel', '#232830'); ctx.lineWidth = 1.5; ctx.stroke();
+  // tooltip
+  const label = p.label;
+  ctx.font = '11px Inter, system-ui, sans-serif';
+  const tw = ctx.measureText(label).width;
+  const padX = 7, padY = 5, boxW = tw + padX * 2, boxH = 22;
+  let bx = p.x - boxW / 2;
+  bx = Math.max(2, Math.min(w - boxW - 2, bx));
+  let by = p.y - boxH - 8;
+  if (by < 2) by = p.y + 8;
+  ctx.fillStyle = themeColor('--chalk', '#ecebe6');
+  ctx.globalAlpha = 1;
+  roundRect(ctx, bx, by, boxW, boxH, 6); ctx.fill();
+  ctx.fillStyle = themeColor('--bg', '#1a1d23');
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, bx + padX, by + boxH / 2);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Find the most significant peaks and valleys — not every wiggle. Candidates must
+// dominate a wide neighborhood; we then rank by prominence and keep only the top few,
+// spaced apart, so the chart gets a handful of meaningful callouts like a coach's notes.
+function findExtrema(vals) {
+  const n = vals.length;
+  if (n < 4) return [];
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min || 1;
+  const win = Math.max(2, Math.round(n / 6));
+  const minProminence = range * 0.15;
+  const cands = [];
+  for (let i = 0; i < n; i++) {
+    let isMax = true, isMin = true;
+    let lo = vals[i], hi = vals[i];
+    for (let j = Math.max(0, i - win); j <= Math.min(n - 1, i + win); j++) {
+      if (j === i) continue;
+      if (vals[j] > vals[i]) isMax = false;
+      if (vals[j] < vals[i]) isMin = false;
+      lo = Math.min(lo, vals[j]); hi = Math.max(hi, vals[j]);
+    }
+    if (isMax && !isMin) {
+      const prom = vals[i] - lo;
+      if (prom >= minProminence) cands.push({ i, type: 'peak', prom });
+    } else if (isMin && !isMax) {
+      const prom = hi - vals[i];
+      if (prom >= minProminence) cands.push({ i, type: 'valley', prom });
+    }
+  }
+  // most prominent first, then pick a balanced mix of peaks and valleys, spaced apart
+  cands.sort((a, b) => b.prom - a.prom);
+  const cap = Math.min(6, Math.max(3, Math.round(n / 10)));
+  const peaks = cands.filter(c => c.type === 'peak');
+  const valleys = cands.filter(c => c.type === 'valley');
+  const chosen = [];
+  const tryAdd = c => {
+    if (!c) return;
+    if (chosen.length >= cap) return;
+    if (chosen.some(o => Math.abs(o.i - c.i) < win)) return;
+    chosen.push(c);
+  };
+  // alternate taking the next-best peak and valley so both extremes show
+  let pi = 0, vi = 0;
+  while (chosen.length < cap && (pi < peaks.length || vi < valleys.length)) {
+    if (pi < peaks.length) tryAdd(peaks[pi++]);
+    if (vi < valleys.length) tryAdd(valleys[vi++]);
+    if (pi >= peaks.length && vi >= valleys.length) break;
+  }
+  return chosen.sort((a, b) => a.i - b.i);
+}
+
+function drawCallout(ctx, x, y, text, type, leftBound, rightBound, topBound, bottomBound) {
+  ctx.save();
+  ctx.font = '9px Inter, system-ui, sans-serif';
+  const tw = ctx.measureText(text).width;
+  const padX = 5, boxW = tw + padX * 2, boxH = 15, gap = 7;
+  // peak label sits above the point, valley below — flip if it would clip
+  let by = type === 'peak' ? y - gap - boxH : y + gap;
+  if (by < topBound) by = y + gap;
+  if (by + boxH > bottomBound) by = y - gap - boxH;
+  let bx = x - boxW / 2;
+  bx = Math.max(leftBound, Math.min(rightBound - boxW, bx));
+  // connector dot
+  ctx.fillStyle = type === 'peak' ? themeColor('--red', '#c0483f') : themeColor('--ok-green', '#3f8f62');
+  ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+  // pill
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = type === 'peak' ? themeColor('--red', '#c0483f') : themeColor('--ok-green', '#3f8f62');
+  roundRect(ctx, bx, by, boxW, boxH, 5); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, bx + boxW / 2, by + boxH / 2 + 0.5);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+function renderTrendChart(canvas, series, color, opts) {
+  opts = opts || {};
+  const fmt = opts.fmt || (v => v.toFixed(1));
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth || 300;
+  const cssHeight = canvas.clientHeight || 130;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  const ctx = canvas.getContext('2d');
+
+  const drawEmpty = () => {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', cssWidth / 2, cssHeight / 2);
+  };
+  if (!series.length) { canvas._scrub = { points: [], redrawBase: drawEmpty }; drawEmpty(); return; }
+
+  const drawField = (smoothMode === 'raw') ? 'raw' : 'smoothed';
+  const rawVals = series.map(p => p.raw);
+  const smoothVals = series.map(p => p.smoothed);
+  let min = Math.min(...rawVals, ...smoothVals);
+  let max = Math.max(...rawVals, ...smoothVals);
+  if (opts.goalLine != null) { min = Math.min(min, opts.goalLine); max = Math.max(max, opts.goalLine); }
+  if (min === max) { min -= 1; max += 1; }
+  const pad = (max - min) * 0.15;
+  min -= pad; max += pad;
+
+  const marginL = 38, marginR = 10, marginT = 12, marginB = 20;
+  const plotW = cssWidth - marginL - marginR;
+  const plotH = cssHeight - marginT - marginB;
+  const win = opts.window;
+  const useTime = win && win.endMs > win.startMs;
+  const xForMs = ms => marginL + ((ms - win.startMs) / (win.endMs - win.startMs)) * plotW;
+  const xFor = useTime
+    ? (i => xForMs(new Date(series[i].timestamp).getTime()))
+    : (i => marginL + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW));
+  const yFor = v => marginT + plotH - ((v - min) / (max - min)) * plotH;
+
+  const drawBase = () => {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    // Y gridlines + value labels (min, mid, max)
+    ctx.font = '9px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    [min, (min + max) / 2, max].forEach(v => {
+      const y = yFor(v);
+      ctx.strokeStyle = themeColor('--line', '#363d48');
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(cssWidth - marginR, y); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.fillText(fmt(v), marginL - 5, y);
+    });
+    ctx.textBaseline = 'alphabetic';
+
+    // X date labels — window bounds when shared window is set, else first/last point
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.textAlign = 'left';
+    ctx.fillText(fmtShortDate(useTime ? win.startMs : series[0].timestamp), marginL, cssHeight - 6);
+    ctx.textAlign = 'right';
+    ctx.fillText(fmtShortDate(useTime ? win.endMs : series[series.length - 1].timestamp), cssWidth - marginR, cssHeight - 6);
+
+    // year demarcations
+    if (useTime) drawYearLinesByTime(ctx, win, xForMs, marginT, marginT + plotH);
+    else drawYearMarkers(ctx, series, xFor, marginT, marginT + plotH);
+
+    // goal line
+    if (opts.goalLine != null) {
+      ctx.save();
+      ctx.strokeStyle = themeColor('--ok-green', '#3f8f62');
+      ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(marginL, yFor(opts.goalLine)); ctx.lineTo(cssWidth - marginR, yFor(opts.goalLine)); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = themeColor('--ok-green', '#3f8f62');
+      ctx.textAlign = 'left';
+      ctx.fillText('goal ' + fmt(opts.goalLine), marginL + 2, yFor(opts.goalLine) - 3);
+    }
+
+    // faint raw dots (smoothed mode)
+    if (smoothMode !== 'raw') {
+      ctx.fillStyle = 'rgba(140,140,140,0.45)';
+      series.forEach((p, i) => { ctx.beginPath(); ctx.arc(xFor(i), yFor(p.raw), 2, 0, Math.PI * 2); ctx.fill(); });
+    }
+
+    // line
+    ctx.lineWidth = smoothMode === 'raw' ? 1.5 : 2;
+    if (opts.colorByGoal && opts.startDist) {
+      for (let i = 1; i < series.length; i++) {
+        const midVal = (series[i-1][drawField] + series[i][drawField]) / 2;
+        ctx.strokeStyle = goalColor(midVal, opts.startDist);
+        ctx.beginPath(); ctx.moveTo(xFor(i-1), yFor(series[i-1][drawField])); ctx.lineTo(xFor(i), yFor(series[i][drawField])); ctx.stroke();
+      }
+      if (series.length === 1) { ctx.fillStyle = goalColor(series[0][drawField], opts.startDist); ctx.beginPath(); ctx.arc(xFor(0), yFor(series[0][drawField]), 3, 0, Math.PI*2); ctx.fill(); }
+    } else {
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      series.forEach((p, i) => { const x = xFor(i), y = yFor(p[drawField]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+      ctx.stroke();
+    }
+
+    if (smoothMode === 'raw') {
+      series.forEach((p, i) => {
+        ctx.fillStyle = (opts.colorByGoal && opts.startDist) ? goalColor(p.raw, opts.startDist) : color;
+        ctx.beginPath(); ctx.arc(xFor(i), yFor(p.raw), 2.5, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    // peak / valley callouts
+    if (opts.callouts !== false) {
+      const vals = series.map(p => p[drawField]);
+      const extrema = findExtrema(vals);
+      extrema.forEach(ex => {
+        drawCallout(ctx, xFor(ex.i), yFor(vals[ex.i]), fmt(vals[ex.i]), ex.type, marginL, cssWidth - marginR, marginT, marginT + plotH);
+      });
+    }
+  };
+
+  drawBase();
+
+  // store scrub hit-test data
+  canvas._scrub = {
+    plotTop: marginT, plotBottom: marginT + plotH,
+    redrawBase: drawBase,
+    points: series.map((p, i) => ({
+      x: xFor(i), y: yFor(p[drawField]),
+      color: (opts.colorByGoal && opts.startDist) ? goalColor(p[drawField], opts.startDist) : color,
+      label: `${fmt(p[drawField])} · ${fmtShortDate(p.timestamp)}`
+    }))
+  };
+  attachScrub(canvas);
+}
+
+function renderBodyStat(statElId, subElId, points, unit) {
+  const statEl = document.getElementById(statElId);
+  const subEl = document.getElementById(subElId);
+  if (!points.length) { statEl.textContent = '—'; subEl.textContent = 'No data yet'; return; }
+  const field = smoothMode === 'raw' ? 'raw' : 'smoothed';
+  const latest = points[points.length - 1];
+  statEl.textContent = `${latest[field].toFixed(1)} ${unit}`;
+  const cutoff = new Date(latest.timestamp).getTime() - 7 * 24 * 60 * 60 * 1000;
+  const past = findClosestAtOrBefore(points, cutoff);
+  if (past) {
+    const delta = latest[field] - past[field];
+    const sign = delta > 0 ? '+' : '';
+    subEl.textContent = `7-day: ${sign}${delta.toFixed(1)} ${unit} · ~${sign}${delta.toFixed(1)} ${unit}/wk`;
+  } else {
+    subEl.textContent = `${points.length} entr${points.length === 1 ? 'y' : 'ies'} logged so far`;
+  }
+}
+
+function renderBodyCharts() {
+  const win = getSharedWindow();
+  const weightFull = computeSmoothedSeries(bodyEntries, 'weight');
+  const waistFull = computeSmoothedSeries(bodyEntries, 'waist');
+  const weightPoints = sliceToWindow(weightFull, win);
+  const waistPoints = sliceToWindow(waistFull, win);
+  const accent = themeColor('--iron-red', '#c23b22');
+  const accent2 = themeColor('--plate-blue', '#5b6470');
+  const suffix = smoothMode === 'raw' ? '(raw)' : '(smoothed)';
+  document.getElementById('weightChartTitle').textContent = `Weight Trend ${suffix}`;
+  document.getElementById('waistChartTitle').textContent = `Waist Trend ${suffix}`;
+
+  // goal coloring uses full history for a stable reference; goal LINE only drawn when toggled on
+  let weightOpts = { fmt: v => v.toFixed(1) + ' lb', window: win };
+  if (goalWeight !== null && weightFull.length) {
+    const field = smoothMode === 'raw' ? 'raw' : 'smoothed';
+    const startDist = Math.abs(weightFull[0][field] - goalWeight) || 1;
+    weightOpts = Object.assign(weightOpts, { colorByGoal: true, startDist });
+    if (showGoalLine) weightOpts.goalLine = goalWeight;
+  }
+  renderTrendChart(document.getElementById('weightChart'), weightPoints, accent, weightOpts);
+  renderTrendChart(document.getElementById('waistChart'), waistPoints, accent2, { fmt: v => v.toFixed(1) + ' in', window: win });
+  renderBodyStat('weightStat', 'weightSubstat', weightPoints, 'lb');
+  renderBodyStat('waistStat', 'waistSubstat', waistPoints, 'in');
+  renderBpChart(win);
+}
+
+// Blood pressure: two lines (systolic + diastolic), no smoothing, plus category on latest
+function renderBpChart(win) {
+  const canvas = document.getElementById('bpChart');
+  const statEl = document.getElementById('bpStat');
+  const subEl = document.getElementById('bpSubstat');
+  const pts = sliceToWindow(bodyEntries
+    .filter(e => typeof e.sys === 'number' && typeof e.dia === 'number')
+    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)), win);
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 300, cssH = canvas.clientHeight || 130;
+  canvas.width = cssW*dpr; canvas.height = cssH*dpr;
+  const ctx = canvas.getContext('2d');
+
+  if (!pts.length) {
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', cssW/2, cssH/2);
+    statEl.textContent = '—'; subEl.textContent = 'No data yet';
+    canvas._scrub = { points: [], redrawBase: () => {} };
+    return;
+  }
+
+  const sys = pts.map(p=>p.sys), dia = pts.map(p=>p.dia);
+  let min = Math.min(...dia) - 8, max = Math.max(...sys) + 8;
+  const marginL = 38, marginR = 10, marginT = 12, marginB = 20;
+  const pW = cssW - marginL - marginR, pH = cssH - marginT - marginB;
+  const useTime = win && win.endMs > win.startMs;
+  const xForMs = ms => marginL + ((ms - win.startMs) / (win.endMs - win.startMs)) * pW;
+  const xFor = useTime
+    ? (i => xForMs(new Date(pts[i].timestamp).getTime()))
+    : (i => marginL + (pts.length===1 ? pW/2 : (i/(pts.length-1))*pW));
+  const yFor = v => marginT + pH - ((v-min)/(max-min))*pH;
+  const sysCol = themeColor('--iron-red', '#c23b22');
+  const diaCol = themeColor('--plate-blue', '#5b6470');
+
+  const drawBase = () => {
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+    // Y labels
+    ctx.font = '9px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [min, (min+max)/2, max].forEach(v => {
+      const y = yFor(v);
+      ctx.strokeStyle = themeColor('--line', '#363d48'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(cssW - marginR, y); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+      ctx.fillText(Math.round(v), marginL - 5, y);
+    });
+    ctx.textBaseline = 'alphabetic';
+    // X date labels — window bounds when shared window set
+    ctx.fillStyle = themeColor('--chalk-dim', '#8c8f94');
+    ctx.textAlign = 'left'; ctx.fillText(fmtShortDate(useTime ? win.startMs : pts[0].timestamp), marginL, cssH - 6);
+    ctx.textAlign = 'right'; ctx.fillText(fmtShortDate(useTime ? win.endMs : pts[pts.length-1].timestamp), cssW - marginR, cssH - 6);
+    // year demarcations
+    if (useTime) drawYearLinesByTime(ctx, win, xForMs, marginT, marginT + pH);
+    else drawYearMarkers(ctx, pts, xFor, marginT, marginT + pH);
+    // lines
+    const drawLine = (arr, col) => {
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
+      arr.forEach((v,i)=>{ const x=xFor(i),y=yFor(v); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+      ctx.stroke();
+      ctx.fillStyle = col;
+      arr.forEach((v,i)=>{ ctx.beginPath(); ctx.arc(xFor(i),yFor(v),2.5,0,Math.PI*2); ctx.fill(); });
+    };
+    drawLine(sys, sysCol);
+    drawLine(dia, diaCol);
+  };
+  drawBase();
+
+  const last = pts[pts.length-1];
+  statEl.textContent = `${last.sys}/${last.dia}`;
+  subEl.textContent = `Latest · ${bpCategory(last.sys, last.dia)} · sys (accent) / dia (blue)`;
+
+  // scrub: nearest point shows sys/dia + date; marker sits on the systolic line
+  canvas._scrub = {
+    plotTop: marginT, plotBottom: marginT + pH,
+    redrawBase: drawBase,
+    points: pts.map((p, i) => ({
+      x: xFor(i), y: yFor(p.sys), color: sysCol,
+      label: `${p.sys}/${p.dia} · ${fmtShortDate(p.timestamp)}`
+    }))
+  };
+  attachScrub(canvas);
+}
+
+function bpCategory(sys, dia) {
+  if (sys >= 180 || dia >= 120) return 'Hypertensive crisis';
+  if (sys >= 140 || dia >= 90) return 'Stage 2 high';
+  if (sys >= 130 || dia >= 80) return 'Stage 1 high';
+  if (sys >= 120) return 'Elevated';
+  return 'Normal';
+}
+
+function renderBodyLedger() {
+  const container = document.getElementById('bodyLedger');
+  if (!bodyEntries.length) {
+    container.innerHTML = '<div class="empty">No body stats logged yet.</div>';
+    return;
+  }
+  const sorted = [...bodyEntries].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const groups = {};
+  sorted.forEach(e => {
+    const key = fmtDay(e.timestamp);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+  container.innerHTML = '';
+  Object.keys(groups).forEach(day => {
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'ledger-day';
+    const label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = day;
+    dayDiv.appendChild(label);
+    groups[day].forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'entry';
+      const parts = [];
+      if (typeof e.weight === 'number') parts.push(`${e.weight} lb`);
+      if (typeof e.waist === 'number') parts.push(`${e.waist} in`);
+      if (typeof e.sys === 'number' && typeof e.dia === 'number') parts.push(`${e.sys}/${e.dia} bp`);
+      row.innerHTML = `
+        <span class="name">Body</span>
+        <span class="load">${parts.join(' · ')}<span class="time">${fmtTime(e.timestamp)}</span></span>
+        <button class="del" data-id="${e.id}">✕</button>
+      `;
+      dayDiv.appendChild(row);
+    });
+    container.appendChild(dayDiv);
+  });
+  container.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bodyEntries = bodyEntries.filter(e => e.id !== btn.dataset.id);
+      renderBodyLedger();
+      renderBodyCharts();
+      renderGoalBmi();
+      bodySaveLocal();
+    });
+  });
+}
+
+document.getElementById('bodyWhen').value = nowLocalISO();
+document.getElementById('bodyLogBtn').addEventListener('click', () => {
+  const weightVal = parseFloat(document.getElementById('bodyWeight').value);
+  const waistVal = parseFloat(document.getElementById('bodyWaist').value);
+  const sysVal = parseInt(document.getElementById('bodySys').value, 10);
+  const diaVal = parseInt(document.getElementById('bodyDia').value, 10);
+  const when = document.getElementById('bodyWhen').value;
+  const hasBP = sysVal && diaVal;
+  if ((!weightVal && !waistVal && !hasBP) || !when) {
+    alert('Enter at least one measurement (weight, waist, or blood pressure), plus a date/time.');
+    return;
+  }
+  if ((sysVal && !diaVal) || (diaVal && !sysVal)) {
+    alert('Blood pressure needs both systolic and diastolic values.');
+    return;
+  }
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), timestamp: new Date(when).toISOString() };
+  if (weightVal) entry.weight = weightVal;
+  if (waistVal) entry.waist = waistVal;
+  if (hasBP) { entry.sys = sysVal; entry.dia = diaVal; }
+  bodyEntries.push(entry);
+  bodySaveLocal();
+  renderBodyLedger();
+  renderBodyCharts();
+  renderGoalBmi();
+  ['bodyWeight','bodyWaist','bodySys','bodyDia'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('bodyWhen').value = nowLocalISO();
+});
+
+// ============ LIFT PROGRESS (reads the same lift log data as index.html) ============
+let liftEntries = [];
+function loadLiftEntries() {
+  try {
+    const raw = localStorage.getItem('ironlog_entries');
+    if (raw) liftEntries = JSON.parse(raw);
+  } catch (e) { liftEntries = []; }
+}
+
+function epley1RM(weight, reps) {
+  return weight * (1 + reps / 30);
+}
+
+// Mirror Iron Log's exercise catalog so dropdown grouping and types match the main screen
+const KNOWN_LIFTS = {
+  'Squat': { type: 'weighted', group: 'Program' },
+  'Bench Press': { type: 'weighted', group: 'Program' },
+  'Deadlift': { type: 'weighted', group: 'Program' },
+  'Overhead Press': { type: 'weighted', group: 'Program' },
+  'Barbell Row': { type: 'weighted', group: 'Program' },
+  'Pull-Ups': { type: 'bodyweight', group: 'Program' },
+  'Plank': { type: 'timed', group: 'Program' },
+  'Bicep Curls': { type: 'weighted', group: 'Bonus' }
+};
+
+// Infer type from logged data for anything not in the catalog
+function inferLiftType(liftName) {
+  if (KNOWN_LIFTS[liftName]) return KNOWN_LIFTS[liftName].type;
+  const sample = liftEntries.find(e => e.lift === liftName);
+  if (!sample) return 'weighted';
+  if (typeof sample.durationSeconds === 'number') return 'timed';
+  if (sample.equipment === 'bodyweight' || (sample.weight === 0 && typeof sample.reps === 'number')) return 'bodyweight';
+  return 'weighted';
+}
+
+function getLoggedLiftNames() {
+  const names = new Set();
+  liftEntries.forEach(e => { if (e.lift) names.add(e.lift); });
+  return Array.from(names).sort();
+}
+
+// Best metric per calendar day for a given lift, chronological.
+// weighted -> best estimated 1RM; bodyweight -> most reps in a set; timed -> longest duration
+function computeLiftProgress(liftName) {
+  const type = inferLiftType(liftName);
+  const dayBest = {};
+  liftEntries
+    .filter(e => e.lift === liftName)
+    .forEach(e => {
+      let value = null, detail = '';
+      if (type === 'timed' && typeof e.durationSeconds === 'number') {
+        value = e.durationSeconds;
+        detail = `${e.durationSeconds}s`;
+      } else if (type === 'bodyweight' && typeof e.reps === 'number') {
+        value = e.reps;
+        detail = `${e.reps} reps`;
+      } else if (type === 'weighted' && typeof e.weight === 'number' && e.weight > 0 && typeof e.reps === 'number') {
+        value = epley1RM(e.weight, e.reps);
+        detail = `${e.weight}×${e.reps}`;
+      }
+      if (value === null) return;
+      const dayKey = new Date(e.timestamp).toDateString();
+      if (!dayBest[dayKey] || value > dayBest[dayKey].value) {
+        dayBest[dayKey] = { timestamp: e.timestamp, value, detail };
+      }
+    });
+  return { type, points: Object.values(dayBest).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) };
+}
+
+const LIFT_CHART_LABELS = {
+  weighted: { title: 'Estimated 1RM Trend', unit: 'lb', fmt: v => `~${Math.round(v)} lb` },
+  bodyweight: { title: 'Best Set Reps Trend', unit: 'reps', fmt: v => `${Math.round(v)} reps` },
+  timed: { title: 'Best Duration Trend', unit: 's', fmt: v => `${Math.round(v)}s` }
+};
+
+function renderLiftChart(liftName) {
+  const { type, points } = computeLiftProgress(liftName);
+  const labels = LIFT_CHART_LABELS[type];
+  document.getElementById('liftChartTitle').textContent = labels.title;
+  const series = points.map(p => ({ timestamp: p.timestamp, raw: p.value, smoothed: p.value }));
+  const accent = themeColor('--iron-red', '#c23b22');
+  renderTrendChart(document.getElementById('liftChart'), series, accent, { fmt: labels.fmt });
+
+  const statEl = document.getElementById('liftStat');
+  const subEl = document.getElementById('liftSubstat');
+  if (!points.length) {
+    statEl.textContent = '—';
+    subEl.textContent = 'No history for this lift yet';
+    return;
+  }
+  const latest = points[points.length - 1];
+  statEl.textContent = labels.fmt(latest.value);
+  const first = points[0];
+  const totalChange = latest.value - first.value;
+  const sign = totalChange >= 0 ? '+' : '';
+  subEl.textContent = `Best: ${latest.detail} · ${sign}${Math.round(totalChange)} ${labels.unit} since first logged session`;
+}
+
+function populateLiftSelect() {
+  const select = document.getElementById('liftSelect');
+  const names = getLoggedLiftNames();
+  select.innerHTML = '';
+  if (!names.length) {
+    const opt = document.createElement('option');
+    opt.textContent = 'No lifts logged yet';
+    select.appendChild(opt);
+    document.getElementById('liftStat').textContent = '—';
+    document.getElementById('liftSubstat').textContent = 'Log some sets in Iron Log first';
+    renderTrendChart(document.getElementById('liftChart'), [], themeColor('--iron-red', '#c23b22'));
+    return;
+  }
+  // Group like the Iron Log dropdown: Program, Bonus, then anything else
+  const groups = { Program: [], Bonus: [], Other: [] };
+  names.forEach(name => {
+    const g = KNOWN_LIFTS[name] ? KNOWN_LIFTS[name].group : 'Other';
+    groups[g].push(name);
+  });
+  Object.keys(groups).forEach(groupName => {
+    if (!groups[groupName].length) return;
+    const og = document.createElement('optgroup');
+    og.label = groupName;
+    groups[groupName].forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      og.appendChild(opt);
+    });
+    select.appendChild(og);
+  });
+  select.value = select.querySelector('option').value;
+  renderLiftChart(select.value);
+}
+document.getElementById('liftSelect').addEventListener('change', (e) => renderLiftChart(e.target.value));
+
+// Smoothed / raw toggle for the body charts
+document.querySelectorAll('#smoothToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    smoothMode = btn.dataset.mode;
+    document.querySelectorAll('#smoothToggle button').forEach(b => b.classList.toggle('active', b === btn));
+    renderBodyCharts();
+  });
+});
+
+// Time-frame selector — zoom into recent data so week-to-week movement is visible
+document.querySelectorAll('#rangeToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    chartRange = btn.dataset.range;
+    document.querySelectorAll('#rangeToggle button').forEach(b => b.classList.toggle('active', b === btn));
+    renderBodyCharts();
+  });
+});
+
+// Goal line toggle — off by default so the axis fits the data, not the goal
+document.getElementById('goalLineToggle').addEventListener('change', (e) => {
+  showGoalLine = e.target.checked;
+  renderBodyCharts();
+});
+
+// ============ Backup: body entries + goal + height ============
+function setBackupStatus(msg, cls) {
+  const el = document.getElementById('backupStatus');
+  el.textContent = msg;
+  el.className = 'backup-status' + (cls ? ' ' + cls : '');
+}
+
+function exportBackup() {
+  try {
+    const payload = {
+      type: 'ironlog-reports-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      bodyEntries: bodyEntries,
+      goalWeight: goalWeight,
+      heightIn: heightIn
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reports-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setBackupStatus(`Exported ${bodyEntries.length} entr${bodyEntries.length === 1 ? 'y' : 'ies'} to Downloads ✓`, 'ok');
+    const btn = document.getElementById('exportBtn');
+    const orig = btn.textContent; btn.textContent = '✓ Exported'; btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+  } catch (e) {
+    setBackupStatus('Export failed: ' + e.message, 'err');
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportBackup);
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+
+document.getElementById('importFile').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    // accept either our backup object or a bare array of body entries
+    const incoming = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.bodyEntries) ? parsed.bodyEntries : null);
+    if (!incoming) throw new Error('unrecognized file');
+    const existingIds = new Set(bodyEntries.map(e => e.id));
+    let added = 0;
+    incoming.forEach(e => {
+      if (!e || !e.timestamp) return;
+      const hasData = typeof e.weight === 'number' || typeof e.waist === 'number' || (typeof e.sys === 'number' && typeof e.dia === 'number');
+      if (!hasData) return;
+      if (!e.id) e.id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      if (!existingIds.has(e.id)) { bodyEntries.push(e); existingIds.add(e.id); added++; }
+    });
+    // restore goal/height only if not already set locally
+    if (!Array.isArray(parsed)) {
+      if (goalWeight === null && typeof parsed.goalWeight === 'number') {
+        goalWeight = parsed.goalWeight;
+        localStorage.setItem('ironlog_goal_weight', goalWeight);
+        document.getElementById('goalWeight').value = goalWeight;
+      }
+      if (heightIn === null && typeof parsed.heightIn === 'number') {
+        heightIn = parsed.heightIn;
+        localStorage.setItem('ironlog_height_in', heightIn);
+        document.getElementById('heightIn').value = heightIn;
+      }
+    }
+    bodySaveLocal();
+    renderBodyLedger();
+    renderBodyCharts();
+    renderGoalBmi();
+    setBackupStatus(`Import complete: ${added} new entr${added === 1 ? 'y' : 'ies'} added (duplicates skipped)`, 'ok');
+  } catch (e) {
+    setBackupStatus('Import failed — is this a Reports backup file?', 'err');
+  } finally {
+    ev.target.value = '';
+  }
+});
+
+// Collapsible body log history
+document.getElementById('historyToggle').addEventListener('click', () => {
+  const scroll = document.getElementById('ledgerScroll');
+  const btn = document.getElementById('historyToggle');
+  const open = scroll.style.display !== 'none';
+  scroll.style.display = open ? 'none' : 'block';
+  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+});
+
+// ============ Init ============
+bodyLoadLocal();
+loadGoalHeight();
+renderBodyLedger();
+renderBodyCharts();
+renderGoalBmi();
+loadLiftEntries();
+populateLiftSelect();
+
+// Re-render charts on resize (canvas needs re-scaling for DPR when layout changes)
+window.addEventListener('resize', () => {
+  renderBodyCharts();
+  const select = document.getElementById('liftSelect');
+  if (select.value) renderLiftChart(select.value);
+});
+</script>
+</body>
+</html>
